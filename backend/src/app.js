@@ -4,6 +4,7 @@ import express from "express";
 import helmet from "helmet";
 
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
+import authRouter from "./routes/auth.routes.js";
 import contactRouter from "./routes/contact.routes.js";
 import healthRouter from "./routes/health.routes.js";
 import projectRouter from "./routes/project.routes.js";
@@ -28,7 +29,8 @@ app.get("/", (_request, response) => {
     docs: {
       health: "/api/health",
       projects: "/api/projects",
-      contacts: "/api/contacts"
+      contacts: "/api/contacts",
+      auth: "/api/auth"
     }
   });
 });
@@ -36,6 +38,7 @@ app.get("/", (_request, response) => {
 app.use("/api/health", healthRouter);
 app.use("/api/projects", projectRouter);
 app.use("/api/contacts", contactRouter);
+app.use("/api/auth", authRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

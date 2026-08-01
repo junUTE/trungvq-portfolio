@@ -8,7 +8,7 @@ const navItems = [
   { to: "/contact", label: "Contact" }
 ];
 
-function Header() {
+function Header({ adminLink }) {
   return (
     <header className="mx-auto mb-10 flex max-w-5xl flex-col items-center gap-6 sm:mb-14 sm:flex-row sm:gap-10 xl:mb-20">
       <div className="shrink-0">
@@ -25,8 +25,8 @@ function Header() {
           Trung VQ
         </NavLink>
 
-        <nav className="mt-4 flex gap-4 sm:mt-6 sm:gap-8">
-          {navItems.map((item) => (
+        <nav className="mt-4 flex flex-wrap gap-4 sm:mt-6 sm:gap-8">
+          {[...navItems, ...(adminLink ? [adminLink] : [])].map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

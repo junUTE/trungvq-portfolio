@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
-import { Link, Route, Routes, useParams } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import {
   createContact,
   extractErrorMessage,
+  getCurrentAdmin,
+  getStoredAuthToken,
   getProjectBySlug,
-  getProjects
+  getProjects,
+  loginAdmin,
+  logoutAdmin,
+  setAuthToken
 } from "./services/portfolioApi";
 
 const codeRepos = [
@@ -63,10 +68,42 @@ const articles = [
 ];
 
 function App() {
+  const location = useLocation();
+  const adminSession = useAdminSession();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+  const headerAdminLink = adminSession.user
+    ? { to: "/admin", label: "Dashboard" }
+    : { to: "/admin-login", label: "Admin" };
+
+  if (isAdminRoute) {
+    return (
+      <Routes>
+        <Route
+          path="/admin-login"
+          element={
+            <AdminLoginPage
+              isAuthenticated={adminSession.isAuthenticated}
+              authLoading={adminSession.loading}
+              onLoginSuccess={adminSession.handleLoginSuccess}
+            />
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdminRoute isAuthenticated={adminSession.isAuthenticated} loading={adminSession.loading}>
+              <AdminDashboardPage user={adminSession.user} onLogout={adminSession.logout} />
+            </ProtectedAdminRoute>
+          }
+        />
+      </Routes>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-700">
       <div className="px-4 py-8 sm:px-8 sm:pb-10 sm:pt-14 xl:pt-20">
-        <Header />
+        <Header adminLink={headerAdminLink} />
 
         <main>
           <Routes>
@@ -98,10 +135,277 @@ function App() {
               }
             />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/admin-login" element={<Navigate to="/admin-login" replace />} />
+            <Route path="/admin" element={<Navigate to="/admin" replace />} />
           </Routes>
         </main>
 
         <Footer />
+      </div>
+    </div>
+  );
+}
+
+function ProtectedAdminRoute({ isAuthenticated, loading, children }) {
+  if (loading) {
+    return <AdminStatusScreen title="Checking session" message="Đang kiểm tra trạng thái đăng nhập admin..." />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/admin-login" replace />;
+  }
+
+  return children;
+}
+
+function AdminLoginPage({ isAuthenticated, authLoading, onLoginSuccess }) {
+  const navigate = useNavigate();
+  const [credentials, setCredentials] = useState({
+    username: "",
+    password: ""
+  });
+  const [status, setStatus] = useState("idle");
+  const [feedback, setFeedback] = useState("");
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/admin", { replace: true });
+    }
+  }, [authLoading, isAuthenticated, navigate]);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setStatus("submitting");
+    setFeedback("");
+
+    try {
+      const payload = await loginAdmin(credentials);
+      onLoginSuccess(payload.data);
+      setStatus("success");
+      setFeedback(payload.message || "Đăng nhập thành công.");
+      navigate("/admin", { replace: true });
+    } catch (error) {
+      setStatus("error");
+      setFeedback(extractErrorMessage(error));
+    } finally {
+      setStatus("idle");
+    }
+  }
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setCredentials((current) => ({
+      ...current,
+      [name]: value
+    }));
+  }
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.12),_transparent_45%),linear-gradient(180deg,_#f8fafc,_#e2e8f0)] px-4 py-10 text-slate-800 sm:px-8 sm:py-16">
+      <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.92fr_1.08fr]">
+        <div className="rounded-[2rem] border border-white/70 bg-slate-900 p-8 text-white shadow-[0_30px_80px_rgba(15,23,42,0.24)] sm:p-10">
+          <p className="text-sm uppercase tracking-[0.28em] text-sky-300">Admin Access</p>
+          <h1 className="mt-6 text-4xl font-light sm:text-5xl">Portfolio control room</h1>
+          <p className="mt-6 text-lg leading-8 text-slate-300">
+            Khu vực này dành cho quản trị nội dung dự án, theo dõi contact và mở rộng CRUD trong ngày 6.
+          </p>
+          <div className="mt-10 grid gap-4">
+            {["JWT bearer authentication", "Protected admin route middleware", "Ready for project CRUD and contact management"].map((item) => (
+              <div key={item} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-2xl sm:p-10">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Sign In</p>
+              <h2 className="mt-3 text-3xl font-light text-slate-900">Admin login</h2>
+            </div>
+            <Link to="/" className="text-sm font-medium uppercase tracking-[0.18em] text-sky-600">
+              Back home
+            </Link>
+          </div>
+
+          <div className="mt-8 rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
+            {feedback || "Dùng tài khoản admin đã được seed từ biến môi trường `ADMIN_USERNAME` và `ADMIN_PASSWORD`."}
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-8 grid gap-5">
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-700">Username</span>
+              <input
+                name="username"
+                value={credentials.username}
+                onChange={handleChange}
+                required
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-sky-400"
+                placeholder="admin"
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-700">Password</span>
+              <input
+                name="password"
+                type="password"
+                value={credentials.password}
+                onChange={handleChange}
+                required
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-sky-400"
+                placeholder="••••••••"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={status === "submitting"}
+              className="mt-2 inline-flex w-fit items-center justify-center rounded-full bg-slate-900 px-7 py-3 text-sm font-medium uppercase tracking-[0.22em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {status === "submitting" ? "Signing in..." : "Login to dashboard"}
+            </button>
+          </form>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AdminDashboardPage({ user, onLogout }) {
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    setStatus("submitting");
+    setError("");
+
+    try {
+      await onLogout();
+      navigate("/admin-login", { replace: true });
+    } catch (logoutError) {
+      setError(extractErrorMessage(logoutError));
+    } finally {
+      setStatus("idle");
+    }
+  }
+
+  const metrics = [
+    { label: "Authentication", value: "JWT active", helper: "Bearer token + server guard" },
+    { label: "Role", value: user?.role || "admin", helper: "Admin-only access" },
+    {
+      label: "Last login",
+      value: formatAdminDate(user?.lastLogin),
+      helper: "Updated after successful login"
+    }
+  ];
+
+  const nextSteps = [
+    "Kết nối CRUD project vào dashboard trong ngày 6.",
+    "Thêm trang contact management và trạng thái replied.",
+    "Chuẩn bị avatar upload API khi cần cập nhật hồ sơ admin."
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-8 sm:py-10">
+      <section className="mx-auto max-w-6xl">
+        <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(12,74,110,0.95))] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.45)] sm:p-10">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.28em] text-sky-300">Admin Dashboard</p>
+              <h1 className="mt-4 text-4xl font-light text-white sm:text-5xl">Xin chào, {user?.username}</h1>
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
+                Dashboard cơ bản đã sẵn sàng và chỉ hiển thị sau khi xác thực thành công từ backend.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/"
+                className="inline-flex items-center rounded-full border border-white/15 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-100"
+              >
+                View public site
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={status === "submitting"}
+                className="inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {status === "submitting" ? "Logging out..." : "Logout"}
+              </button>
+            </div>
+          </div>
+
+          {error ? <InfoCard className="mt-6" tone="error" message={error} /> : null}
+
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {metrics.map((metric) => (
+              <article key={metric.label} className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{metric.label}</p>
+                <p className="mt-4 text-2xl font-light text-white">{metric.value}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-300">{metric.helper}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="rounded-[2rem] border border-slate-800 bg-slate-900/80 p-8">
+            <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Access summary</p>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <AdminPanelCard title="Protected backend">
+                `GET /api/auth/me` yêu cầu token hợp lệ và middleware kiểm tra role admin.
+              </AdminPanelCard>
+              <AdminPanelCard title="Seeded credentials">
+                Admin account được tạo từ script seed với mật khẩu đã hash bằng `bcrypt`.
+              </AdminPanelCard>
+              <AdminPanelCard title="Frontend session">
+                Token được lưu local và được nạp lại khi bạn mở dashboard lần sau.
+              </AdminPanelCard>
+              <AdminPanelCard title="Ready for Day 6">
+                Layout này có thể gắn project table, contact table và form CRUD ngay sau bước auth.
+              </AdminPanelCard>
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
+            <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Next build items</p>
+            <div className="mt-6 space-y-4">
+              {nextSteps.map((step, index) => (
+                <div key={step} className="flex gap-4 rounded-2xl bg-slate-50 p-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-600 text-sm font-medium text-white">
+                    0{index + 1}
+                  </div>
+                  <p className="pt-2 text-base leading-7 text-slate-600">{step}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AdminPanelCard({ title, children }) {
+  return (
+    <article className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <h2 className="text-lg font-medium text-white">{title}</h2>
+      <p className="mt-3 text-sm leading-6 text-slate-300">{children}</p>
+    </article>
+  );
+}
+
+function AdminStatusScreen({ title, message }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <div className="max-w-lg rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center text-slate-100">
+        <p className="text-sm uppercase tracking-[0.28em] text-sky-300">{title}</p>
+        <p className="mt-4 text-lg leading-8 text-slate-300">{message}</p>
       </div>
     </div>
   );
@@ -707,6 +1011,82 @@ function useProjects() {
     loading,
     error
   };
+}
+
+function useAdminSession() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(Boolean(getStoredAuthToken()));
+
+  useEffect(() => {
+    const storedToken = getStoredAuthToken();
+
+    if (!storedToken) {
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    async function hydrateSession() {
+      try {
+        const payload = await getCurrentAdmin();
+
+        if (active) {
+          setUser(payload.data.user);
+        }
+      } catch {
+        setAuthToken("");
+
+        if (active) {
+          setUser(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    hydrateSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function handleLoginSuccess(data) {
+    setAuthToken(data.token);
+    setUser(data.user);
+    setLoading(false);
+  }
+
+  async function handleLogout() {
+    try {
+      await logoutAdmin();
+    } finally {
+      setAuthToken("");
+      setUser(null);
+    }
+  }
+
+  return {
+    user,
+    loading,
+    isAuthenticated: Boolean(user),
+    handleLoginSuccess,
+    logout: handleLogout
+  };
+}
+
+function formatAdminDate(value) {
+  if (!value) {
+    return "Just seeded";
+  }
+
+  return new Date(value).toLocaleString("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
 }
 
 export default App;

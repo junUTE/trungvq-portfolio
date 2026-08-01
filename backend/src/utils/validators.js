@@ -65,3 +65,19 @@ export function validateContactPayload(payload) {
 
   return errors;
 }
+
+export function validateAuthPayload(payload) {
+  const errors = [];
+  const username = normalizeString(payload.username);
+  const password = normalizeString(payload.password);
+
+  if (!username) {
+    errors.push("Username is required.");
+  }
+
+  if (!password) {
+    errors.push("Password is required.");
+  }
+
+  return errors;
+}
