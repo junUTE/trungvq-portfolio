@@ -66,6 +66,62 @@ export function logoutAdmin() {
   });
 }
 
+export function getAdminProjects() {
+  return request("/admin/projects");
+}
+
+export function createAdminProject(payload) {
+  return request("/admin/projects", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminProject(projectId, payload) {
+  return request(`/admin/projects/${projectId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteAdminProject(projectId) {
+  return request(`/admin/projects/${projectId}`, {
+    method: "DELETE"
+  });
+}
+
+export function getAdminContacts() {
+  return request("/admin/contacts");
+}
+
+export function updateAdminContact(contactId, payload) {
+  return request(`/admin/contacts/${contactId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function uploadProjectImageAsset(payload) {
+  return request("/admin/upload/project-image", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function uploadAdminAvatarAsset(payload) {
+  return request("/admin/upload/avatar", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminAvatar(payload) {
+  return request("/admin/upload/avatar", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function setAuthToken(token) {
   authToken = token || "";
 

@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } fr
 
 import Footer from "./components/Footer";
 import Header from "./components/Header";
+import AdminDashboard from "./components/AdminDashboard";
 import {
   createContact,
   extractErrorMessage,
@@ -92,7 +93,11 @@ function App() {
           path="/admin"
           element={
             <ProtectedAdminRoute isAuthenticated={adminSession.isAuthenticated} loading={adminSession.loading}>
-              <AdminDashboardPage user={adminSession.user} onLogout={adminSession.logout} />
+              <AdminDashboard
+                user={adminSession.user}
+                onLogout={adminSession.logout}
+                onUserChange={adminSession.setUser}
+              />
             </ProtectedAdminRoute>
           }
         />
@@ -271,132 +276,6 @@ function AdminLoginPage({ isAuthenticated, authLoading, onLoginSuccess }) {
         </div>
       </section>
     </div>
-  );
-}
-
-function AdminDashboardPage({ user, onLogout }) {
-  const [status, setStatus] = useState("idle");
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-
-  async function handleLogout() {
-    setStatus("submitting");
-    setError("");
-
-    try {
-      await onLogout();
-      navigate("/admin-login", { replace: true });
-    } catch (logoutError) {
-      setError(extractErrorMessage(logoutError));
-    } finally {
-      setStatus("idle");
-    }
-  }
-
-  const metrics = [
-    { label: "Authentication", value: "JWT active", helper: "Bearer token + server guard" },
-    { label: "Role", value: user?.role || "admin", helper: "Admin-only access" },
-    {
-      label: "Last login",
-      value: formatAdminDate(user?.lastLogin),
-      helper: "Updated after successful login"
-    }
-  ];
-
-  const nextSteps = [
-    "Kết nối CRUD project vào dashboard trong ngày 6.",
-    "Thêm trang contact management và trạng thái replied.",
-    "Chuẩn bị avatar upload API khi cần cập nhật hồ sơ admin."
-  ];
-
-  return (
-    <div className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-8 sm:py-10">
-      <section className="mx-auto max-w-6xl">
-        <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(12,74,110,0.95))] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.45)] sm:p-10">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.28em] text-sky-300">Admin Dashboard</p>
-              <h1 className="mt-4 text-4xl font-light text-white sm:text-5xl">Xin chào, {user?.username}</h1>
-              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
-                Dashboard cơ bản đã sẵn sàng và chỉ hiển thị sau khi xác thực thành công từ backend.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/"
-                className="inline-flex items-center rounded-full border border-white/15 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-100"
-              >
-                View public site
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={status === "submitting"}
-                className="inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {status === "submitting" ? "Logging out..." : "Logout"}
-              </button>
-            </div>
-          </div>
-
-          {error ? <InfoCard className="mt-6" tone="error" message={error} /> : null}
-
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {metrics.map((metric) => (
-              <article key={metric.label} className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{metric.label}</p>
-                <p className="mt-4 text-2xl font-light text-white">{metric.value}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-300">{metric.helper}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-[2rem] border border-slate-800 bg-slate-900/80 p-8">
-            <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Access summary</p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <AdminPanelCard title="Protected backend">
-                `GET /api/auth/me` yêu cầu token hợp lệ và middleware kiểm tra role admin.
-              </AdminPanelCard>
-              <AdminPanelCard title="Seeded credentials">
-                Admin account được tạo từ script seed với mật khẩu đã hash bằng `bcrypt`.
-              </AdminPanelCard>
-              <AdminPanelCard title="Frontend session">
-                Token được lưu local và được nạp lại khi bạn mở dashboard lần sau.
-              </AdminPanelCard>
-              <AdminPanelCard title="Ready for Day 6">
-                Layout này có thể gắn project table, contact table và form CRUD ngay sau bước auth.
-              </AdminPanelCard>
-            </div>
-          </section>
-
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
-            <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Next build items</p>
-            <div className="mt-6 space-y-4">
-              {nextSteps.map((step, index) => (
-                <div key={step} className="flex gap-4 rounded-2xl bg-slate-50 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-600 text-sm font-medium text-white">
-                    0{index + 1}
-                  </div>
-                  <p className="pt-2 text-base leading-7 text-slate-600">{step}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function AdminPanelCard({ title, children }) {
-  return (
-    <article className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <h2 className="text-lg font-medium text-white">{title}</h2>
-      <p className="mt-3 text-sm leading-6 text-slate-300">{children}</p>
-    </article>
   );
 }
 
@@ -1074,19 +953,9 @@ function useAdminSession() {
     loading,
     isAuthenticated: Boolean(user),
     handleLoginSuccess,
-    logout: handleLogout
+    logout: handleLogout,
+    setUser
   };
-}
-
-function formatAdminDate(value) {
-  if (!value) {
-    return "Just seeded";
-  }
-
-  return new Date(value).toLocaleString("vi-VN", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  });
 }
 
 export default App;

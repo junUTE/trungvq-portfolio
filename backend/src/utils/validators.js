@@ -81,3 +81,29 @@ export function validateAuthPayload(payload) {
 
   return errors;
 }
+
+export function validateContactStatusPayload(payload) {
+  const errors = [];
+
+  if (!["unread", "replied"].includes(payload.status)) {
+    errors.push("Status must be unread or replied.");
+  }
+
+  return errors;
+}
+
+export function validateAssetPayload(payload) {
+  const errors = [];
+  const url = normalizeString(payload.url);
+  const publicId = normalizeString(payload.publicId);
+
+  if (!urlPattern.test(url)) {
+    errors.push("Asset URL must be a valid URL.");
+  }
+
+  if (!publicId) {
+    errors.push("Public ID is required.");
+  }
+
+  return errors;
+}
