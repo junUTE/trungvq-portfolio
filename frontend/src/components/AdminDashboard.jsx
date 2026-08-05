@@ -2,14 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import {
+  createAdminArticle,
   createAdminProject,
+  createAdminWorkItem,
+  deleteAdminArticle,
   deleteAdminProject,
+  deleteAdminWorkItem,
+  getAdminArticles,
   extractErrorMessage,
   getAdminContacts,
+  getAdminProfile,
   getAdminProjects,
+  getAdminWorkItems,
+  updateAdminArticle,
+  updateAdminProfile,
   updateAdminAvatar,
   updateAdminContact,
   updateAdminProject,
+  updateAdminWorkItem,
   uploadProjectImageAsset
 } from "../services/portfolioApi";
 
@@ -32,6 +42,50 @@ const emptyProjectForm = {
 const emptyAssetForm = {
   url: "",
   publicId: ""
+};
+
+const emptyProfileForm = {
+  heroTitle: "",
+  introSegmentsJson: JSON.stringify(
+    [
+      { text: "Mình xây dựng web app với " },
+      { text: "React", tone: "text-sky-600" },
+      { text: ", " },
+      { text: "Tailwind CSS", tone: "text-cyan-600" },
+      { text: ", " },
+      { text: "Node.js", tone: "text-emerald-600" },
+      { text: " và " },
+      { text: "Express", tone: "text-violet-600" },
+      { text: ", tập trung vào trải nghiệm mượt, giao diện rõ ràng và luồng quản trị nội dung thật để sản phẩm có thể vận hành như một ứng dụng hoàn chỉnh." }
+    ],
+    null,
+    2
+  ),
+  goalDescription: "",
+  githubUrl: "",
+  linkedinUrl: ""
+};
+
+const emptyArticleForm = {
+  title: "",
+  slug: "",
+  category: "",
+  readTime: "",
+  excerpt: "",
+  tone: "from-slate-200 to-slate-100",
+  publishedAt: "",
+  status: "draft",
+  order: 0
+};
+
+const emptyWorkForm = {
+  title: "",
+  company: "",
+  period: "",
+  summary: "",
+  highlights: "",
+  status: "draft",
+  order: 0
 };
 
 function toProjectForm(project) {
@@ -67,6 +121,39 @@ function toProjectPayload(form) {
   };
 }
 
+function toProfileForm(profile) {
+  if (!profile) {
+    return emptyProfileForm;
+  }
+
+  return {
+    heroTitle: profile.heroTitle || "",
+    introSegmentsJson: JSON.stringify(profile.introSegments || [], null, 2),
+    goalDescription: profile.goalDescription || "",
+    githubUrl: profile.githubUrl || "",
+    linkedinUrl: profile.linkedinUrl || ""
+  };
+}
+
+function toProfilePayload(form) {
+  let introSegments = [];
+
+  try {
+    const parsed = JSON.parse(form.introSegmentsJson);
+    introSegments = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    throw new Error("Intro segments JSON is invalid.");
+  }
+
+  return {
+    heroTitle: form.heroTitle,
+    introSegments,
+    goalDescription: form.goalDescription,
+    githubUrl: form.githubUrl,
+    linkedinUrl: form.linkedinUrl
+  };
+}
+
 export default function AdminDashboard({ user, onLogout, onUserChange }) {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -85,7 +172,15 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
   const [projectFeedback, setProjectFeedback] = useState("");
   const [contactFeedback, setContactFeedback] = useState("");
   const [profileFeedback, setProfileFeedback] = useState("");
+  const [contentFeedback, setContentFeedback] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [profileForm, setProfileForm] = useState(emptyProfileForm);
+  const [articles, setArticles] = useState([]);
+  const [workItems, setWorkItems] = useState([]);
+  const [articleForm, setArticleForm] = useState(emptyArticleForm);
+  const [workForm, setWorkForm] = useState(emptyWorkForm);
+  const [selectedArticleId, setSelectedArticleId] = useState("");
+  const [selectedWorkItemId, setSelectedWorkItemId] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -97,11 +192,20 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
       setError("");
 
       try {
-        const [projectsPayload, contactsPayload] = await Promise.all([getAdminProjects(), getAdminContacts()]);
+        const [projectsPayload, contactsPayload, profilePayload, articlesPayload, workPayload] = await Promise.all([
+          getAdminProjects(),
+          getAdminContacts(),
+          getAdminProfile(),
+          getAdminArticles(),
+          getAdminWorkItems()
+        ]);
 
         if (active) {
           setProjects(projectsPayload.data || []);
           setContacts(contactsPayload.data || []);
+          setProfileForm(toProfileForm(profilePayload.data));
+          setArticles(articlesPayload.data || []);
+          setWorkItems(workPayload.data || []);
         }
       } catch (requestError) {
         if (active) {
@@ -175,6 +279,33 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
     const { name, value } = event.target;
 
     setAvatarForm((current) => ({
+      ...current,
+      [name]: value
+    }));
+  }
+
+  function handleProfileFieldChange(event) {
+    const { name, value } = event.target;
+
+    setProfileForm((current) => ({
+      ...current,
+      [name]: value
+    }));
+  }
+
+  function handleArticleFieldChange(event) {
+    const { name, value } = event.target;
+
+    setArticleForm((current) => ({
+      ...current,
+      [name]: value
+    }));
+  }
+
+  function handleWorkFieldChange(event) {
+    const { name, value } = event.target;
+
+    setWorkForm((current) => ({
       ...current,
       [name]: value
     }));
@@ -328,6 +459,117 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
     }
   }
 
+  async function handleProfileSubmit(event) {
+    event.preventDefault();
+    setContentFeedback("");
+
+    try {
+      const payload = await updateAdminProfile(toProfilePayload(profileForm));
+      setProfileForm(toProfileForm(payload.data));
+      setContentFeedback(payload.message || "Profile updated successfully.");
+    } catch (updateError) {
+      setContentFeedback(extractErrorMessage(updateError));
+    }
+  }
+
+  async function handleArticleSubmit(event) {
+    event.preventDefault();
+    setContentFeedback("");
+
+    try {
+      const payload = selectedArticleId
+        ? await updateAdminArticle(selectedArticleId, toArticlePayload(articleForm))
+        : await createAdminArticle(toArticlePayload(articleForm));
+      const savedArticle = payload.data;
+
+      setArticles((current) => {
+        if (selectedArticleId) {
+          return current.map((item) => (item._id === savedArticle._id ? savedArticle : item)).sort(sortContentByOrderAndDate);
+        }
+
+        return [savedArticle, ...current].sort(sortContentByOrderAndDate);
+      });
+      setSelectedArticleId(savedArticle._id);
+      setArticleForm(toArticleForm(savedArticle));
+      setContentFeedback(payload.message || "Article saved successfully.");
+    } catch (saveError) {
+      setContentFeedback(extractErrorMessage(saveError));
+    }
+  }
+
+  async function handleArticleDelete(articleId) {
+    const article = articles.find((item) => item._id === articleId);
+
+    if (!article || !window.confirm(`Delete article "${article.title}"?`)) {
+      return;
+    }
+
+    setContentFeedback("");
+
+    try {
+      const payload = await deleteAdminArticle(articleId);
+      setArticles((current) => current.filter((item) => item._id !== articleId));
+
+      if (selectedArticleId === articleId) {
+        setSelectedArticleId("");
+        setArticleForm(emptyArticleForm);
+      }
+
+      setContentFeedback(payload.message || "Article deleted successfully.");
+    } catch (deleteError) {
+      setContentFeedback(extractErrorMessage(deleteError));
+    }
+  }
+
+  async function handleWorkSubmit(event) {
+    event.preventDefault();
+    setContentFeedback("");
+
+    try {
+      const payload = selectedWorkItemId
+        ? await updateAdminWorkItem(selectedWorkItemId, toWorkPayload(workForm))
+        : await createAdminWorkItem(toWorkPayload(workForm));
+      const savedWorkItem = payload.data;
+
+      setWorkItems((current) => {
+        if (selectedWorkItemId) {
+          return current.map((item) => (item._id === savedWorkItem._id ? savedWorkItem : item)).sort(sortContentByOrderAndDate);
+        }
+
+        return [savedWorkItem, ...current].sort(sortContentByOrderAndDate);
+      });
+      setSelectedWorkItemId(savedWorkItem._id);
+      setWorkForm(toWorkForm(savedWorkItem));
+      setContentFeedback(payload.message || "Work item saved successfully.");
+    } catch (saveError) {
+      setContentFeedback(extractErrorMessage(saveError));
+    }
+  }
+
+  async function handleWorkDelete(workItemId) {
+    const workItem = workItems.find((item) => item._id === workItemId);
+
+    if (!workItem || !window.confirm(`Delete work item "${workItem.title}"?`)) {
+      return;
+    }
+
+    setContentFeedback("");
+
+    try {
+      const payload = await deleteAdminWorkItem(workItemId);
+      setWorkItems((current) => current.filter((item) => item._id !== workItemId));
+
+      if (selectedWorkItemId === workItemId) {
+        setSelectedWorkItemId("");
+        setWorkForm(emptyWorkForm);
+      }
+
+      setContentFeedback(payload.message || "Work item deleted successfully.");
+    } catch (deleteError) {
+      setContentFeedback(extractErrorMessage(deleteError));
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-8 sm:py-10">
       <section className="mx-auto max-w-7xl">
@@ -335,9 +577,9 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
           <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.28em] text-sky-300">Admin Dashboard</p>
-              <h1 className="mt-4 text-4xl font-light text-white sm:text-5xl">Xin chao, {user?.username}</h1>
+              <h1 className="mt-4 text-4xl font-light text-white sm:text-5xl">Welcome back, {user?.username}</h1>
               <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
-                Khu vuc quan tri da co CRUD project, quan ly contact va API upload asset de ban khong can sua code tay nua.
+                Manage projects, contacts, articles, work items, and media assets from one place without editing source code manually.
               </p>
             </div>
 
@@ -378,7 +620,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
               <div>
                 <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Project editor</p>
                 <h2 className="mt-3 text-3xl font-light text-white">
-                  {selectedProjectId ? "Cap nhat project" : "Tao project moi"}
+                  {selectedProjectId ? "Update project" : "Create new project"}
                 </h2>
               </div>
               <button
@@ -433,7 +675,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
 
             <form onSubmit={handleProjectSubmit} className="mt-6 grid gap-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Title">
+                <Field label="Title" labelClassName="text-sm font-medium text-slate-700">
                   <input
                     name="title"
                     value={projectForm.title}
@@ -683,6 +925,265 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
             </div>
           ) : null}
         </section>
+
+        <section className="mt-8 grid gap-6 xl:grid-cols-3">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800 xl:col-span-1">
+            <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Profile content</p>
+            <h2 className="mt-3 text-3xl font-light text-slate-900">Profile settings</h2>
+
+            <form onSubmit={handleProfileSubmit} className="mt-6 grid gap-4">
+              <Field label="Hero title" labelClassName="text-sm font-medium text-slate-700">
+                <input name="heroTitle" value={profileForm.heroTitle} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+              </Field>
+              <Field label="Intro segments JSON" labelClassName="text-sm font-medium text-slate-700">
+                <textarea
+                  name="introSegmentsJson"
+                  rows="10"
+                  value={profileForm.introSegmentsJson}
+                  onChange={handleProfileFieldChange}
+                  className={lightFieldClassName}
+                />
+              </Field>
+              <Field label="Goal description" labelClassName="text-sm font-medium text-slate-700">
+                <textarea
+                  name="goalDescription"
+                  rows="4"
+                  value={profileForm.goalDescription}
+                  onChange={handleProfileFieldChange}
+                  className={lightFieldClassName}
+                />
+              </Field>
+              <Field label="GitHub URL" labelClassName="text-sm font-medium text-slate-700">
+                <input name="githubUrl" value={profileForm.githubUrl} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+              </Field>
+              <Field label="LinkedIn URL" labelClassName="text-sm font-medium text-slate-700">
+                <input name="linkedinUrl" value={profileForm.linkedinUrl} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+              </Field>
+              {contentFeedback ? <InfoCard message={contentFeedback} /> : null}
+              <button
+                type="submit"
+                className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
+              >
+                Save profile content
+              </button>
+            </form>
+          </section>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800 xl:col-span-2">
+            <div className="grid gap-6 2xl:grid-cols-2">
+              <div>
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Articles</p>
+                    <h2 className="mt-3 text-3xl font-light text-slate-900">Manage articles</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedArticleId("");
+                      setArticleForm(emptyArticleForm);
+                    }}
+                    className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
+                  >
+                    New article
+                  </button>
+                </div>
+
+                <form onSubmit={handleArticleSubmit} className="mt-6 grid gap-4">
+                  <Field label="Title" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="title" value={articleForm.title} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Slug" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="slug" value={articleForm.slug} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Category" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="category" value={articleForm.category} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                    <Field label="Read time" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="readTime" value={articleForm.readTime} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                  </div>
+                  <Field label="Excerpt" labelClassName="text-sm font-medium text-slate-700">
+                    <textarea name="excerpt" rows="4" value={articleForm.excerpt} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Tone" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="tone" value={articleForm.tone} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                    <Field label="Published at" labelClassName="text-sm font-medium text-slate-700">
+                      <input
+                        name="publishedAt"
+                        type="date"
+                        value={articleForm.publishedAt}
+                        onChange={handleArticleFieldChange}
+                        className={lightFieldClassName}
+                      />
+                    </Field>
+                    <Field label="Order" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="order" type="number" value={articleForm.order} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                  </div>
+                  <Field label="Status" labelClassName="text-sm font-medium text-slate-700">
+                    <select name="status" value={articleForm.status} onChange={handleArticleFieldChange} className={lightFieldClassName}>
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </Field>
+                  <button
+                    type="submit"
+                    className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
+                  >
+                    {selectedArticleId ? "Update article" : "Create article"}
+                  </button>
+                </form>
+              </div>
+
+              <div className="space-y-4">
+                {[...articles].sort(sortContentByOrderAndDate).map((article) => (
+                  <article key={article._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-xl font-medium text-slate-900">{article.title}</h3>
+                        <p className="mt-2 text-sm text-slate-500">
+                          {article.category} · {article.readTime}
+                        </p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">{article.excerpt}</p>
+                      </div>
+                      <StatusBadge value={article.status} />
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedArticleId(article._id);
+                          setArticleForm(toArticleForm(article));
+                        }}
+                        className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleArticleDelete(article._id)}
+                        className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
+          <div className="grid gap-6 xl:grid-cols-2">
+            <div>
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Work</p>
+                  <h2 className="mt-3 text-3xl font-light text-slate-900">Manage work items</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedWorkItemId("");
+                    setWorkForm(emptyWorkForm);
+                  }}
+                  className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
+                >
+                  New work item
+                </button>
+              </div>
+
+              <form onSubmit={handleWorkSubmit} className="mt-6 grid gap-4">
+                <Field label="Title">
+                  <input name="title" value={workForm.title} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                </Field>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Company" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="company" value={workForm.company} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Period" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="period" value={workForm.period} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <Field label="Summary" labelClassName="text-sm font-medium text-slate-700">
+                  <textarea name="summary" rows="4" value={workForm.summary} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                </Field>
+                <Field label="Highlights (comma separated)" labelClassName="text-sm font-medium text-slate-700">
+                  <input
+                    name="highlights"
+                    value={workForm.highlights}
+                    onChange={handleWorkFieldChange}
+                    className={lightFieldClassName}
+                    placeholder="React, CRUD workflows, Dashboard UI"
+                  />
+                </Field>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Status" labelClassName="text-sm font-medium text-slate-700">
+                    <select name="status" value={workForm.status} onChange={handleWorkFieldChange} className={lightFieldClassName}>
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </Field>
+                  <Field label="Order" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="order" type="number" value={workForm.order} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <button
+                  type="submit"
+                  className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
+                >
+                  {selectedWorkItemId ? "Update work item" : "Create work item"}
+                </button>
+              </form>
+            </div>
+
+            <div className="space-y-4">
+              {[...workItems].sort(sortContentByOrderAndDate).map((item) => (
+                <article key={item._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-xl font-medium text-slate-900">{item.title}</h3>
+                      <p className="mt-2 text-sm text-slate-500">{[item.company, item.period].filter(Boolean).join(" · ")}</p>
+                      <p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p>
+                    </div>
+                    <StatusBadge value={item.status} />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {(item.highlights || []).map((highlight) => (
+                      <span key={highlight} className="rounded-full bg-white px-3 py-1 text-xs text-slate-500 ring-1 ring-slate-200">
+                        {highlight}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedWorkItemId(item._id);
+                        setWorkForm(toWorkForm(item));
+                      }}
+                      className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleWorkDelete(item._id)}
+                      className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
       </section>
     </div>
   );
@@ -705,10 +1206,10 @@ async function readFileAsDataUrl(file) {
   });
 }
 
-function Field({ label, children }) {
+function Field({ label, children, labelClassName = "text-sm text-slate-300" }) {
   return (
-    <label className="grid gap-2">
-      <span className="text-sm text-slate-300">{label}</span>
+    <label className="grid min-w-0 gap-2">
+      <span className={labelClassName}>{label}</span>
       {children}
     </label>
   );
@@ -746,17 +1247,77 @@ function sortProjects(left, right) {
 
 function formatAdminDate(value) {
   if (!value) {
-    return "Just seeded";
+    return "Just created";
   }
 
-  return new Date(value).toLocaleString("vi-VN", {
+  return new Date(value).toLocaleString("en-GB", {
     dateStyle: "medium",
     timeStyle: "short"
   });
 }
 
+function toArticleForm(article) {
+  if (!article) {
+    return emptyArticleForm;
+  }
+
+  return {
+    title: article.title || "",
+    slug: article.slug || "",
+    category: article.category || "",
+    readTime: article.readTime || "",
+    excerpt: article.excerpt || "",
+    tone: article.tone || "from-slate-200 to-slate-100",
+    publishedAt: article.publishedAt ? new Date(article.publishedAt).toISOString().slice(0, 10) : "",
+    status: article.status || "draft",
+    order: Number.isFinite(article.order) ? article.order : 0
+  };
+}
+
+function toArticlePayload(form) {
+  return {
+    ...form,
+    order: Number(form.order) || 0
+  };
+}
+
+function toWorkForm(workItem) {
+  if (!workItem) {
+    return emptyWorkForm;
+  }
+
+  return {
+    title: workItem.title || "",
+    company: workItem.company || "",
+    period: workItem.period || "",
+    summary: workItem.summary || "",
+    highlights: Array.isArray(workItem.highlights) ? workItem.highlights.join(", ") : "",
+    status: workItem.status || "draft",
+    order: Number.isFinite(workItem.order) ? workItem.order : 0
+  };
+}
+
+function toWorkPayload(form) {
+  return {
+    ...form,
+    highlights: form.highlights
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    order: Number(form.order) || 0
+  };
+}
+
+function sortContentByOrderAndDate(left, right) {
+  if ((left.order || 0) !== (right.order || 0)) {
+    return (left.order || 0) - (right.order || 0);
+  }
+
+  return new Date(right.publishedAt || right.createdAt || 0).getTime() - new Date(left.publishedAt || left.createdAt || 0).getTime();
+}
+
 const fieldClassName =
-  "rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-400";
+  "w-full min-w-0 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-400";
 
 const lightFieldClassName =
-  "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-800 outline-none transition focus:border-sky-400";
+  "w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-sky-400 focus:bg-white";

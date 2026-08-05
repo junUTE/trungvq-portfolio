@@ -38,6 +38,18 @@ export function getProjects() {
   return request("/projects");
 }
 
+export function getProfile() {
+  return request("/profile");
+}
+
+export function getArticles() {
+  return request("/articles");
+}
+
+export function getWorkItems() {
+  return request("/work");
+}
+
 export function getProjectBySlug(slug) {
   return request(`/projects/${slug}`);
 }
@@ -70,6 +82,17 @@ export function getAdminProjects() {
   return request("/admin/projects");
 }
 
+export function getAdminProfile() {
+  return request("/admin/profile");
+}
+
+export function updateAdminProfile(payload) {
+  return request("/admin/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function createAdminProject(payload) {
   return request("/admin/projects", {
     method: "POST",
@@ -92,6 +115,54 @@ export function deleteAdminProject(projectId) {
 
 export function getAdminContacts() {
   return request("/admin/contacts");
+}
+
+export function getAdminArticles() {
+  return request("/admin/articles");
+}
+
+export function createAdminArticle(payload) {
+  return request("/admin/articles", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminArticle(articleId, payload) {
+  return request(`/admin/articles/${articleId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteAdminArticle(articleId) {
+  return request(`/admin/articles/${articleId}`, {
+    method: "DELETE"
+  });
+}
+
+export function getAdminWorkItems() {
+  return request("/admin/work");
+}
+
+export function createAdminWorkItem(payload) {
+  return request("/admin/work", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminWorkItem(workItemId, payload) {
+  return request(`/admin/work/${workItemId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteAdminWorkItem(workItemId) {
+  return request(`/admin/work/${workItemId}`, {
+    method: "DELETE"
+  });
 }
 
 export function updateAdminContact(contactId, payload) {

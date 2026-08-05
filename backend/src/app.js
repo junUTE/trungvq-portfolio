@@ -6,10 +6,13 @@ import helmet from "helmet";
 import { getAllowedOrigins } from "./utils/env.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import adminRouter from "./routes/admin.routes.js";
+import articleRouter from "./routes/article.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import contactRouter from "./routes/contact.routes.js";
 import healthRouter from "./routes/health.routes.js";
+import profileRouter from "./routes/profile.routes.js";
 import projectRouter from "./routes/project.routes.js";
+import workRouter from "./routes/work.routes.js";
 
 dotenv.config();
 
@@ -37,6 +40,9 @@ app.get("/", (_request, response) => {
     docs: {
       health: "/api/health",
       projects: "/api/projects",
+      profile: "/api/profile",
+      articles: "/api/articles",
+      work: "/api/work",
       contacts: "/api/contacts",
       auth: "/api/auth",
       admin: "/api/admin"
@@ -46,6 +52,9 @@ app.get("/", (_request, response) => {
 
 app.use("/api/health", healthRouter);
 app.use("/api/projects", projectRouter);
+app.use("/api/profile", profileRouter);
+app.use("/api/articles", articleRouter);
+app.use("/api/work", workRouter);
 app.use("/api/contacts", contactRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);

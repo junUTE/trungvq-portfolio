@@ -1,11 +1,18 @@
+import Article from "../models/article.model.js";
 import Contact from "../models/contact.model.js";
+import Profile from "../models/profile.model.js";
 import Project from "../models/project.model.js";
+import Work from "../models/work.model.js";
 import { deleteImageAsset, uploadImageAsset } from "../services/cloudinary.service.js";
 import { slugify } from "../utils/slugify.js";
 import {
   validateAssetPayload,
+  validateArticlePayload,
   validateContactStatusPayload,
+  validateProfilePayload,
   validateProjectPayload
+  ,
+  validateWorkPayload
 } from "../utils/validators.js";
 
 function serializeUser(user) {
@@ -50,12 +57,107 @@ function normalizeProjectPayload(body, currentProject = null) {
   };
 }
 
+function normalizeProfilePayload(body, currentProfile = null) {
+  const introSegments = Array.isArray(body.introSegments)
+    ? body.introSegments
+        .map((segment) => ({
+          text: typeof segment?.text === "string" ? segment.text : "",
+          tone: typeof segment?.tone === "string" ? segment.tone.trim() : ""
+        }))
+        .filter((segment) => segment.text.trim())
+    : currentProfile?.introSegments || [];
+
+  return {
+    key: "main",
+    heroTitle: body.heroTitle.trim(),
+    introSegments,
+    goalDescription: body.goalDescription.trim(),
+    githubUrl: typeof body.githubUrl === "string" ? body.githubUrl.trim() : currentProfile?.githubUrl || "",
+    linkedinUrl:
+      typeof body.linkedinUrl === "string" ? body.linkedinUrl.trim() : currentProfile?.linkedinUrl || ""
+  };
+}
+
+function normalizeArticlePayload(body) {
+  const title = body.title.trim();
+
+  return {
+    title,
+    slug: body.slug?.trim() ? slugify(body.slug) : slugify(title),
+    category: body.category.trim(),
+    readTime: body.readTime.trim(),
+    excerpt: body.excerpt.trim(),
+    tone: typeof body.tone === "string" && body.tone.trim() ? body.tone.trim() : "from-slate-200 to-slate-100",
+    publishedAt: body.publishedAt ? new Date(body.publishedAt) : new Date(),
+    status: body.status === "published" ? "published" : "draft",
+    order: Number.isFinite(Number(body.order)) ? Number(body.order) : 0
+  };
+}
+
+function normalizeWorkPayload(body) {
+  const highlights = Array.isArray(body.highlights)
+    ? body.highlights
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter(Boolean)
+    : [];
+
+  return {
+    title: body.title.trim(),
+    company: typeof body.company === "string" ? body.company.trim() : "",
+    period: typeof body.period === "string" ? body.period.trim() : "",
+    summary: body.summary.trim(),
+    highlights,
+    status: body.status === "published" ? "published" : "draft",
+    order: Number.isFinite(Number(body.order)) ? Number(body.order) : 0
+  };
+}
+
 export async function getAdminProjects(_request, response, next) {
   try {
     const projects = await Project.find().sort({ order: 1, createdAt: -1 }).lean();
 
     return response.status(200).json({
       data: projects
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getAdminProfile(_request, response, next) {
+  try {
+    const profile = await Profile.findOne({ key: "main" }).lean();
+
+    return response.status(200).json({
+      data: profile
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function updateAdminProfile(request, response, next) {
+  try {
+    const errors = validateProfilePayload(request.body);
+
+    if (errors.length > 0) {
+      return response.status(400).json({
+        message: "Validation failed.",
+        errors
+      });
+    }
+
+    const existingProfile = await Profile.findOne({ key: "main" });
+    const nextPayload = normalizeProfilePayload(request.body, existingProfile);
+    const profile = existingProfile
+      ? Object.assign(existingProfile, nextPayload)
+      : new Profile(nextPayload);
+
+    await profile.save();
+
+    return response.status(200).json({
+      message: "Profile updated successfully.",
+      data: profile
     });
   } catch (error) {
     return next(error);
@@ -161,6 +263,184 @@ export async function getAdminContacts(_request, response, next) {
 
     return response.status(200).json({
       data: contacts
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getAdminArticles(_request, response, next) {
+  try {
+    const articles = await Article.find().sort({ order: 1, publishedAt: -1, createdAt: -1 }).lean();
+
+    return response.status(200).json({
+      data: articles
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function createAdminArticle(request, response, next) {
+  try {
+    const errors = validateArticlePayload(request.body);
+
+    if (errors.length > 0) {
+      return response.status(400).json({
+        message: "Validation failed.",
+        errors
+      });
+    }
+
+    const article = await Article.create(normalizeArticlePayload(request.body));
+
+    return response.status(201).json({
+      message: "Article created successfully.",
+      data: article
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return response.status(409).json({
+        message: "Article slug already exists."
+      });
+    }
+
+    return next(error);
+  }
+}
+
+export async function updateAdminArticle(request, response, next) {
+  try {
+    const article = await Article.findById(request.params.id);
+
+    if (!article) {
+      return response.status(404).json({
+        message: "Article not found."
+      });
+    }
+
+    const errors = validateArticlePayload(request.body);
+
+    if (errors.length > 0) {
+      return response.status(400).json({
+        message: "Validation failed.",
+        errors
+      });
+    }
+
+    Object.assign(article, normalizeArticlePayload(request.body));
+    await article.save();
+
+    return response.status(200).json({
+      message: "Article updated successfully.",
+      data: article
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return response.status(409).json({
+        message: "Article slug already exists."
+      });
+    }
+
+    return next(error);
+  }
+}
+
+export async function deleteAdminArticle(request, response, next) {
+  try {
+    const article = await Article.findByIdAndDelete(request.params.id);
+
+    if (!article) {
+      return response.status(404).json({
+        message: "Article not found."
+      });
+    }
+
+    return response.status(200).json({
+      message: "Article deleted successfully."
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getAdminWorkItems(_request, response, next) {
+  try {
+    const workItems = await Work.find().sort({ order: 1, createdAt: -1 }).lean();
+
+    return response.status(200).json({
+      data: workItems
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function createAdminWorkItem(request, response, next) {
+  try {
+    const errors = validateWorkPayload(request.body);
+
+    if (errors.length > 0) {
+      return response.status(400).json({
+        message: "Validation failed.",
+        errors
+      });
+    }
+
+    const workItem = await Work.create(normalizeWorkPayload(request.body));
+
+    return response.status(201).json({
+      message: "Work item created successfully.",
+      data: workItem
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function updateAdminWorkItem(request, response, next) {
+  try {
+    const workItem = await Work.findById(request.params.id);
+
+    if (!workItem) {
+      return response.status(404).json({
+        message: "Work item not found."
+      });
+    }
+
+    const errors = validateWorkPayload(request.body);
+
+    if (errors.length > 0) {
+      return response.status(400).json({
+        message: "Validation failed.",
+        errors
+      });
+    }
+
+    Object.assign(workItem, normalizeWorkPayload(request.body));
+    await workItem.save();
+
+    return response.status(200).json({
+      message: "Work item updated successfully.",
+      data: workItem
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function deleteAdminWorkItem(request, response, next) {
+  try {
+    const workItem = await Work.findByIdAndDelete(request.params.id);
+
+    if (!workItem) {
+      return response.status(404).json({
+        message: "Work item not found."
+      });
+    }
+
+    return response.status(200).json({
+      message: "Work item deleted successfully."
     });
   } catch (error) {
     return next(error);

@@ -7,10 +7,13 @@ import AdminDashboard from "./components/AdminDashboard";
 import {
   createContact,
   extractErrorMessage,
+  getArticles,
   getCurrentAdmin,
+  getProfile,
   getStoredAuthToken,
   getProjectBySlug,
   getProjects,
+  getWorkItems,
   loginAdmin,
   logoutAdmin,
   setAuthToken
@@ -44,27 +47,6 @@ const codeRepos = [
       { label: "Express", color: "bg-slate-600" },
       { label: "JWT", color: "bg-amber-500" }
     ]
-  }
-];
-
-const articles = [
-  {
-    title: "Cách mình tổ chức một portfolio full-stack trong 7 ngày",
-    category: "Career",
-    date: "07 July 2026",
-    readTime: "4 minute read",
-    excerpt:
-      "Một kế hoạch thực dụng để hoàn thiện portfolio có frontend, backend, database, auth và deploy mà không bị lan man.",
-    tone: "from-slate-200 to-slate-100"
-  },
-  {
-    title: "Những gì nhà tuyển dụng thực sự muốn thấy ở một project cá nhân",
-    category: "Frontend",
-    date: "05 July 2026",
-    readTime: "5 minute read",
-    excerpt:
-      "Thay vì nhồi quá nhiều hiệu ứng, mình tập trung vào cấu trúc, nội dung thật, tốc độ tải và trải nghiệm người dùng rõ ràng.",
-    tone: "from-sky-200 to-cyan-100"
   }
 ];
 
@@ -115,30 +97,8 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:slug" element={<ProjectDetailPage />} />
-            <Route
-              path="/work"
-              element={
-                <ListPage
-                  title="Work"
-                  description="Trang work sẽ gom các case study, kinh nghiệm và vai trò nổi bật của bạn."
-                  items={[
-                    "Lead frontend implementation",
-                    "Internal dashboard systems",
-                    "Client-facing product delivery"
-                  ]}
-                />
-              }
-            />
-            <Route
-              path="/articles"
-              element={
-                <ListPage
-                  title="Articles"
-                  description="Trang articles sẽ chứa bài viết kỹ thuật và chia sẻ quá trình học tập, xây dựng sản phẩm."
-                  items={articles.map((item) => item.title)}
-                />
-              }
-            />
+            <Route path="/work" element={<WorkPage />} />
+            <Route path="/articles" element={<ArticlesPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/admin-login" element={<Navigate to="/admin-login" replace />} />
             <Route path="/admin" element={<Navigate to="/admin" replace />} />
@@ -292,26 +252,40 @@ function AdminStatusScreen({ title, message }) {
 
 function HomePage() {
   const { projects, loading, error } = useProjects();
+  const { profile, loading: loadingProfile, error: profileError } = useProfile();
+  const { articles, loading: loadingArticles, error: articlesError } = useArticles();
   const featuredProjects = projects.filter((project) => project.featured).slice(0, 2);
+  const featuredArticles = articles.slice(0, 2);
 
   return (
     <div className="space-y-10 sm:space-y-14 xl:space-y-20">
       <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl sm:rounded-3xl sm:p-14">
-        <div className="space-y-5">
-          <h1 className="text-3xl font-light tracking-tight text-slate-800 sm:text-5xl">Frontend & Full-stack Developer</h1>
-          <p className="text-xl leading-relaxed text-slate-700 sm:text-2xl">
-            Mình xây dựng web app với <Highlight tone="text-sky-600">React</Highlight>,{" "}
-            <Highlight tone="text-cyan-600">Tailwind CSS</Highlight>, <Highlight tone="text-emerald-600">Node.js</Highlight>,{" "}
-            <Highlight tone="text-violet-600">Express</Highlight> và đang phát triển portfolio theo hướng có admin quản trị nội dung thật.
-          </p>
-          <p className="text-lg leading-relaxed text-slate-600 sm:text-xl">
-            Mục tiêu của mình là tạo ra giao diện chỉn chu, hiệu năng tốt và đủ chiều sâu kỹ thuật để gây ấn tượng với nhà tuyển dụng.
-          </p>
-          <p className="text-lg leading-relaxed text-slate-600 sm:text-xl">
-            Bạn có thể tìm mình trên <a className="font-normal text-sky-600 hover:opacity-60" href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a> và{" "}
-            <a className="font-normal text-sky-600 hover:opacity-60" href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a>.
-          </p>
-        </div>
+        {loadingProfile ? <InfoCard message="Đang tải profile..." /> : null}
+        {profileError ? <InfoCard tone="error" message={profileError} /> : null}
+        {!loadingProfile && !profileError && profile ? (
+          <div className="space-y-5">
+            <h1 className="text-3xl font-light tracking-tight text-slate-800 sm:text-5xl">{profile.heroTitle}</h1>
+            <p className="text-xl leading-relaxed text-slate-700 sm:text-2xl">
+              {(profile.introSegments || []).map((segment, index) => (
+                <Highlight key={`${segment.text}-${index}`} tone={segment.tone}>
+                  {segment.text}
+                </Highlight>
+              ))}
+            </p>
+            <p className="text-lg leading-relaxed text-slate-600 sm:text-xl">{profile.goalDescription}</p>
+            <p className="text-lg leading-relaxed text-slate-600 sm:text-xl">
+              Bạn có thể tìm mình trên{" "}
+              <a className="font-normal text-sky-600 hover:opacity-60" href={profile.githubUrl} target="_blank" rel="noreferrer">
+                GitHub
+              </a>{" "}
+              và{" "}
+              <a className="font-normal text-sky-600 hover:opacity-60" href={profile.linkedinUrl} target="_blank" rel="noreferrer">
+                LinkedIn
+              </a>
+              .
+            </p>
+          </div>
+        ) : null}
       </section>
 
       <SectionShell title="Code">
@@ -370,44 +344,93 @@ function HomePage() {
       </SectionShell>
 
       <SectionShell title="Articles">
-        <div className="space-y-6 sm:space-y-8">
-          {articles.map((article) => (
-            <article
-              key={article.title}
-              className="flex gap-7 rounded-xl border border-slate-200 bg-white p-5 shadow-lg max-sm:flex-col sm:gap-10 sm:rounded-2xl sm:p-10"
-            >
-              <div className={`rounded-xl bg-gradient-to-br ${article.tone} p-4 shadow-lg sm:w-[240px] sm:shrink-0`}>
-                <div className="flex h-full min-h-[190px] items-end rounded-xl border border-white/60 bg-white/55 p-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.24em] text-sky-600">{article.category}</p>
-                    <p className="mt-2 text-2xl font-light leading-tight text-slate-800">Notes</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <h3 className="mb-4 text-2xl font-light text-slate-800 sm:mb-5 sm:text-3xl">{article.title}</h3>
-
-                <p className="mb-4 flex flex-wrap items-center gap-3 text-sm leading-tight text-slate-500 sm:mb-5 sm:gap-5 sm:text-lg">
-                  <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-sky-700">
-                    {article.category}
-                  </span>
-                  <span>{article.date}</span>
-                  <span>{article.readTime}</span>
-                </p>
-
-                <p className="mb-4 text-base leading-7 text-slate-600 sm:mb-5 sm:text-lg">{article.excerpt}</p>
-
-                <a href="/" className="inline-flex items-center gap-1 text-base text-sky-600 transition-opacity duration-300 hover:opacity-50 sm:text-lg">
-                  Read Article
-                  <ArrowIcon className="h-5 w-5" />
-                </a>
-              </div>
-            </article>
-          ))}
-        </div>
+        {loadingArticles ? <InfoCard message="Đang tải bài viết..." /> : null}
+        {articlesError ? <InfoCard tone="error" message={articlesError} /> : null}
+        {!loadingArticles && !articlesError ? (
+          featuredArticles.length > 0 ? (
+            <div className="space-y-6 sm:space-y-8">
+              {featuredArticles.map((article) => (
+                <ArticleCard key={article._id || article.slug} article={article} />
+              ))}
+            </div>
+          ) : (
+            <InfoCard message="Chưa có bài viết nào được publish." />
+          )
+        ) : null}
       </SectionShell>
     </div>
+  );
+}
+
+function WorkPage() {
+  const { workItems, loading, error } = useWorkItems();
+
+  return (
+    <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+      <h1 className="text-4xl font-light text-slate-800">Work</h1>
+      <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
+        Trang work đang lấy trực tiếp các kinh nghiệm và case study ngắn từ backend thay vì nội dung hardcode.
+      </p>
+
+      {loading ? <InfoCard className="mt-8" message="Đang tải work highlights..." /> : null}
+      {error ? <InfoCard className="mt-8" tone="error" message={error} /> : null}
+      {!loading && !error ? (
+        workItems.length > 0 ? (
+          <div className="mt-8 grid gap-4">
+            {workItems.map((item) => (
+              <article key={item._id} className="rounded-xl border border-slate-200 bg-slate-50 p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-light text-slate-800">{item.title}</h2>
+                    <p className="mt-2 text-sm uppercase tracking-[0.2em] text-slate-400">
+                      {[item.company, item.period].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
+                  <StatusPill value={item.status} />
+                </div>
+                <p className="mt-4 text-base leading-7 text-slate-600">{item.summary}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(item.highlights || []).map((highlight) => (
+                    <span key={highlight} className="rounded-full bg-white px-3 py-1 text-sm text-slate-500 ring-1 ring-slate-200">
+                      {highlight}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <InfoCard className="mt-8" message="Chưa có work item nào được publish." />
+        )
+      ) : null}
+    </section>
+  );
+}
+
+function ArticlesPage() {
+  const { articles, loading, error } = useArticles();
+
+  return (
+    <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+      <h1 className="text-4xl font-light text-slate-800">Articles</h1>
+      <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
+        Trang articles đang dùng dữ liệu thật từ database để hiển thị bài viết kỹ thuật và chia sẻ học tập.
+      </p>
+
+      {loading ? <InfoCard className="mt-8" message="Đang tải bài viết..." /> : null}
+      {error ? <InfoCard className="mt-8" tone="error" message={error} /> : null}
+      {!loading && !error ? (
+        articles.length > 0 ? (
+          <div className="mt-8 space-y-6 sm:space-y-8">
+            {articles.map((article) => (
+              <ArticleCard key={article._id || article.slug} article={article} />
+            ))}
+          </div>
+        ) : (
+          <InfoCard className="mt-8" message="Chưa có bài viết nào được publish." />
+        )
+      ) : null}
+    </section>
   );
 }
 
@@ -684,6 +707,35 @@ function ListPage({ title, description, items }) {
   );
 }
 
+function ArticleCard({ article }) {
+  return (
+    <article className="flex gap-7 rounded-xl border border-slate-200 bg-white p-5 shadow-lg max-sm:flex-col sm:gap-10 sm:rounded-2xl sm:p-10">
+      <div className={`rounded-xl bg-gradient-to-br ${article.tone || "from-slate-200 to-slate-100"} p-4 shadow-lg sm:w-[240px] sm:shrink-0`}>
+        <div className="flex h-full min-h-[190px] items-end rounded-xl border border-white/60 bg-white/55 p-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-sky-600">{article.category}</p>
+            <p className="mt-2 text-2xl font-light leading-tight text-slate-800">Notes</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <h3 className="mb-4 text-2xl font-light text-slate-800 sm:mb-5 sm:text-3xl">{article.title}</h3>
+
+        <p className="mb-4 flex flex-wrap items-center gap-3 text-sm leading-tight text-slate-500 sm:mb-5 sm:gap-5 sm:text-lg">
+          <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-sky-700">
+            {article.category}
+          </span>
+          <span>{formatDisplayDate(article.publishedAt)}</span>
+          <span>{article.readTime}</span>
+        </p>
+
+        <p className="mb-4 text-base leading-7 text-slate-600 sm:mb-5 sm:text-lg">{article.excerpt}</p>
+      </div>
+    </article>
+  );
+}
+
 function ProjectShowcaseCard({ project }) {
   return (
     <article className="min-w-0">
@@ -820,7 +872,15 @@ function InfoCard({ message, tone = "default", className = "" }) {
 }
 
 function Highlight({ children, tone }) {
-  return <span className={`font-normal ${tone}`}>{children}</span>;
+  return <span className={tone}>{children}</span>;
+}
+
+function StatusPill({ value }) {
+  return (
+    <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-sky-700">
+      {value}
+    </span>
+  );
 }
 
 function ArrowIcon({ className }) {
@@ -892,6 +952,138 @@ function useProjects() {
   };
 }
 
+function useProfile() {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProfile() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const payload = await getProfile();
+
+        if (active) {
+          setProfile(payload.data);
+        }
+      } catch (requestError) {
+        if (active) {
+          setProfile(null);
+          setError(extractErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return {
+    profile,
+    loading,
+    error
+  };
+}
+
+function useArticles() {
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadArticles() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const payload = await getArticles();
+
+        if (active) {
+          setArticles(payload.data || []);
+        }
+      } catch (requestError) {
+        if (active) {
+          setArticles([]);
+          setError(extractErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadArticles();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return {
+    articles,
+    loading,
+    error
+  };
+}
+
+function useWorkItems() {
+  const [workItems, setWorkItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadWorkItems() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const payload = await getWorkItems();
+
+        if (active) {
+          setWorkItems(payload.data || []);
+        }
+      } catch (requestError) {
+        if (active) {
+          setWorkItems([]);
+          setError(extractErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadWorkItems();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return {
+    workItems,
+    loading,
+    error
+  };
+}
+
 function useAdminSession() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(Boolean(getStoredAuthToken()));
@@ -956,6 +1148,18 @@ function useAdminSession() {
     logout: handleLogout,
     setUser
   };
+}
+
+function formatDisplayDate(value) {
+  if (!value) {
+    return "Unscheduled";
+  }
+
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  });
 }
 
 export default App;

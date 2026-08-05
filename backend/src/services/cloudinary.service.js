@@ -47,9 +47,11 @@ export async function uploadImageAsset({ file, fileName, folder, existingUrl, ex
 
   const timestamp = Math.floor(Date.now() / 1000);
   const normalizedFolder = folder?.trim() || defaultFolders[assetType] || defaultFolders.project;
+  const publicId = fileName ? sanitizePublicId(fileName) : "";
   const signature = signUploadParams(
     {
       folder: normalizedFolder,
+      public_id: publicId,
       timestamp
     },
     config.apiSecret
@@ -62,8 +64,8 @@ export async function uploadImageAsset({ file, fileName, folder, existingUrl, ex
   formData.append("api_key", config.apiKey);
   formData.append("signature", signature);
 
-  if (fileName) {
-    formData.append("public_id", sanitizePublicId(fileName));
+  if (publicId) {
+    formData.append("public_id", publicId);
   }
 
   const response = await fetch(`${CLOUDINARY_API_BASE}/${config.cloudName}/image/upload`, {
