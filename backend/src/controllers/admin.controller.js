@@ -1,5 +1,6 @@
 import Contact from "../models/contact.model.js";
 import Project from "../models/project.model.js";
+import { deleteImageAsset, uploadImageAsset } from "../services/cloudinary.service.js";
 import { slugify } from "../utils/slugify.js";
 import {
   validateAssetPayload,
@@ -46,13 +47,6 @@ function normalizeProjectPayload(body, currentProject = null) {
     featured: Boolean(body.featured),
     status: body.status === "published" ? "published" : "draft",
     order: Number.isFinite(Number(body.order)) ? Number(body.order) : 0
-  };
-}
-
-function serializeAssetPayload(body) {
-  return {
-    url: body.url.trim(),
-    publicId: typeof body.publicId === "string" ? body.publicId.trim() : ""
   };
 }
 
@@ -115,8 +109,14 @@ export async function updateAdminProject(request, response, next) {
       });
     }
 
-    Object.assign(existingProject, normalizeProjectPayload(request.body, existingProject));
+    const nextPayload = normalizeProjectPayload(request.body, existingProject);
+    const previousImagePublicId = existingProject.imagePublicId;
+    Object.assign(existingProject, nextPayload);
     await existingProject.save();
+
+    if (previousImagePublicId && previousImagePublicId !== nextPayload.imagePublicId) {
+      await deleteImageAsset(previousImagePublicId);
+    }
 
     return response.status(200).json({
       message: "Project updated successfully.",
@@ -141,6 +141,10 @@ export async function deleteAdminProject(request, response, next) {
       return response.status(404).json({
         message: "Project not found."
       });
+    }
+
+    if (project.imagePublicId) {
+      await deleteImageAsset(project.imagePublicId);
     }
 
     return response.status(200).json({
@@ -209,9 +213,18 @@ export async function uploadProjectImage(request, response, next) {
       });
     }
 
+    const asset = await uploadImageAsset({
+      file: request.body.file,
+      fileName: request.body.fileName,
+      folder: request.body.folder,
+      existingUrl: request.body.url,
+      existingPublicId: request.body.publicId,
+      assetType: "project"
+    });
+
     return response.status(200).json({
-      message: "Project image asset registered successfully.",
-      data: serializeAssetPayload(request.body)
+      message: "Project image uploaded successfully.",
+      data: asset
     });
   } catch (error) {
     return next(error);
@@ -229,10 +242,23 @@ export async function uploadAdminAvatar(request, response, next) {
       });
     }
 
-    request.user.avatar = request.body.url.trim();
-    request.user.avatarPublicId =
-      typeof request.body.publicId === "string" ? request.body.publicId.trim() : "";
+    const previousAvatarPublicId = request.user.avatarPublicId;
+    const asset = await uploadImageAsset({
+      file: request.body.file,
+      fileName: request.body.fileName,
+      folder: request.body.folder,
+      existingUrl: request.body.url,
+      existingPublicId: request.body.publicId,
+      assetType: "avatar"
+    });
+
+    request.user.avatar = asset.url;
+    request.user.avatarPublicId = asset.publicId;
     await request.user.save();
+
+    if (previousAvatarPublicId && previousAvatarPublicId !== asset.publicId) {
+      await deleteImageAsset(previousAvatarPublicId);
+    }
 
     return response.status(200).json({
       message: "Admin avatar updated successfully.",

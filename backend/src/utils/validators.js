@@ -96,13 +96,18 @@ export function validateAssetPayload(payload) {
   const errors = [];
   const url = normalizeString(payload.url);
   const publicId = normalizeString(payload.publicId);
+  const file = normalizeString(payload.file);
 
-  if (!urlPattern.test(url)) {
+  if (!file && !url) {
+    errors.push("Asset file or URL is required.");
+  }
+
+  if (url && !urlPattern.test(url)) {
     errors.push("Asset URL must be a valid URL.");
   }
 
-  if (!publicId) {
-    errors.push("Public ID is required.");
+  if (url && !publicId) {
+    errors.push("Public ID is required when using an existing asset URL.");
   }
 
   return errors;

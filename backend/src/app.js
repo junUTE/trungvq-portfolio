@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 
+import { getAllowedOrigins } from "./utils/env.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import adminRouter from "./routes/admin.routes.js";
 import authRouter from "./routes/auth.routes.js";
@@ -13,11 +14,17 @@ import projectRouter from "./routes/project.routes.js";
 dotenv.config();
 
 const app = express();
-const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
+const allowedOrigins = getAllowedOrigins();
 
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("CORS origin is not allowed."));
+    },
     credentials: true
   })
 );

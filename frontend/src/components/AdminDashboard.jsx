@@ -76,10 +76,12 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [projectForm, setProjectForm] = useState(emptyProjectForm);
   const [assetForm, setAssetForm] = useState(emptyAssetForm);
+  const [projectAssetFile, setProjectAssetFile] = useState(null);
   const [avatarForm, setAvatarForm] = useState({
     url: user?.avatar || "",
     publicId: user?.avatarPublicId || ""
   });
+  const [avatarFile, setAvatarFile] = useState(null);
   const [projectFeedback, setProjectFeedback] = useState("");
   const [contactFeedback, setContactFeedback] = useState("");
   const [profileFeedback, setProfileFeedback] = useState("");
@@ -178,18 +180,39 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
     }));
   }
 
+  function handleProjectAssetFileChange(event) {
+    setProjectAssetFile(event.target.files?.[0] || null);
+  }
+
+  function handleAvatarFileChange(event) {
+    setAvatarFile(event.target.files?.[0] || null);
+  }
+
   async function handleProjectAssetSubmit(event) {
     event.preventDefault();
     setProjectFeedback("");
 
     try {
-      const payload = await uploadProjectImageAsset(assetForm);
+      const payload = await uploadProjectImageAsset(
+        projectAssetFile
+          ? {
+              file: await readFileAsDataUrl(projectAssetFile),
+              fileName: projectAssetFile.name,
+              folder: "portfolio/projects"
+            }
+          : assetForm
+      );
 
       setProjectForm((current) => ({
         ...current,
         image: payload.data.url,
         imagePublicId: payload.data.publicId
       }));
+      setAssetForm({
+        url: payload.data.url,
+        publicId: payload.data.publicId
+      });
+      setProjectAssetFile(null);
       setProjectFeedback(payload.message || "Project image asset is ready.");
     } catch (uploadError) {
       setProjectFeedback(extractErrorMessage(uploadError));
@@ -201,8 +224,21 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
     setProfileFeedback("");
 
     try {
-      const payload = await updateAdminAvatar(avatarForm);
+      const payload = await updateAdminAvatar(
+        avatarFile
+          ? {
+              file: await readFileAsDataUrl(avatarFile),
+              fileName: avatarFile.name,
+              folder: "portfolio/avatars"
+            }
+          : avatarForm
+      );
       onUserChange?.(payload.data.user);
+      setAvatarForm({
+        url: payload.data.user.avatar || "",
+        publicId: payload.data.user.avatarPublicId || ""
+      });
+      setAvatarFile(null);
       setProfileFeedback(payload.message || "Avatar updated successfully.");
     } catch (uploadError) {
       setProfileFeedback(extractErrorMessage(uploadError));
@@ -242,6 +278,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
       url: project.image || "",
       publicId: project.imagePublicId || ""
     });
+    setProjectAssetFile(null);
     setProjectFeedback(`Editing ${project.title}.`);
   }
 
@@ -249,6 +286,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
     setSelectedProjectId("");
     setProjectForm(emptyProjectForm);
     setAssetForm(emptyAssetForm);
+    setProjectAssetFile(null);
     setProjectFeedback("Ready to create a new project.");
   }
 
@@ -354,9 +392,18 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
 
             <form onSubmit={handleProjectAssetSubmit} className="mt-8 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5">
               <p className="text-sm uppercase tracking-[0.24em] text-sky-300">Project image asset</p>
+              <label className="grid gap-2">
+                <span className="text-sm text-slate-300">Upload image file</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onChange={handleProjectAssetFileChange}
+                  className="rounded-2xl border border-dashed border-white/15 bg-slate-950/40 px-4 py-3 text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-sky-500 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-950"
+                />
+              </label>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2">
-                  <span className="text-sm text-slate-300">Image URL</span>
+                  <span className="text-sm text-slate-300">Existing Image URL</span>
                   <input
                     name="url"
                     value={assetForm.url}
@@ -366,7 +413,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
                   />
                 </label>
                 <label className="grid gap-2">
-                  <span className="text-sm text-slate-300">Public ID</span>
+                  <span className="text-sm text-slate-300">Existing Public ID</span>
                   <input
                     name="publicId"
                     value={assetForm.publicId}
@@ -380,7 +427,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
                 type="submit"
                 className="w-fit rounded-full bg-sky-500 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-950"
               >
-                Save image asset
+                {projectAssetFile ? "Upload project image" : "Save existing image asset"}
               </button>
             </form>
 
@@ -505,6 +552,15 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
               </div>
 
               <form onSubmit={handleAvatarSubmit} className="mt-6 grid gap-4">
+                <label className="grid gap-2">
+                  <span className="text-sm text-slate-700">Upload avatar file</span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleAvatarFileChange}
+                    className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+                  />
+                </label>
                 <Field label="Avatar URL">
                   <input name="url" value={avatarForm.url} onChange={handleAvatarFieldChange} className={lightFieldClassName} />
                 </Field>
@@ -630,6 +686,23 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
       </section>
     </div>
   );
+}
+
+async function readFileAsDataUrl(file) {
+  if (!file) {
+    return "";
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Image must be smaller than 5MB.");
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Unable to read image file."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function Field({ label, children }) {

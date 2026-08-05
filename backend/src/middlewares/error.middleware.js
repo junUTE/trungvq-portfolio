@@ -7,7 +7,12 @@ export function notFoundHandler(_request, response) {
 export function errorHandler(error, _request, response, _next) {
   console.error(error);
 
-  response.status(500).json({
-    message: "Internal server error."
+  const statusCode =
+    Number(error?.statusCode) ||
+    Number(error?.status) ||
+    (error?.message === "CORS origin is not allowed." ? 403 : 500);
+
+  response.status(statusCode).json({
+    message: statusCode >= 500 ? "Internal server error." : error?.message || "Request failed."
   });
 }

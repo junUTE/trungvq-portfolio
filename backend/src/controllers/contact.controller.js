@@ -1,4 +1,5 @@
 import Contact from "../models/contact.model.js";
+import { sendContactNotification } from "../services/mail.service.js";
 import { validateContactPayload } from "../utils/validators.js";
 
 export async function createContact(request, response, next) {
@@ -18,9 +19,16 @@ export async function createContact(request, response, next) {
       message: request.body.message.trim()
     });
 
+    const emailResult = await sendContactNotification(contact);
+
     return response.status(201).json({
-      message: "Contact created successfully.",
-      data: contact
+      message: emailResult.delivered
+        ? "Contact created successfully and email notification sent."
+        : "Contact created successfully.",
+      data: {
+        contact,
+        emailDelivery: emailResult
+      }
     });
   } catch (error) {
     return next(error);
