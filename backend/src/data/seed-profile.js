@@ -1,5 +1,8 @@
 const seedProfile = {
   key: "main",
+  displayName: "Trung VQ",
+  brandInitials: "TV",
+  headerAvatarUrl: "",
   heroTitle: "Frontend & Full-stack Developer",
   introSegments: [
     { text: "Mình xây dựng web app với " },

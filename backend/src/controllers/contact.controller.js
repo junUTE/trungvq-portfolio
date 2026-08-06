@@ -1,5 +1,5 @@
 import Contact from "../models/contact.model.js";
-import { sendContactNotification } from "../services/mail.service.js";
+import { sendContactAutoReply, sendContactNotification } from "../services/mail.service.js";
 import { validateContactPayload } from "../utils/validators.js";
 
 export async function createContact(request, response, next) {
@@ -19,15 +19,22 @@ export async function createContact(request, response, next) {
       message: request.body.message.trim()
     });
 
-    const emailResult = await sendContactNotification(contact);
+    const [adminEmailResult, autoReplyResult] = await Promise.all([
+      sendContactNotification(contact),
+      sendContactAutoReply(contact)
+    ]);
 
     return response.status(201).json({
-      message: emailResult.delivered
-        ? "Contact created successfully and email notification sent."
-        : "Contact created successfully.",
+      message:
+        adminEmailResult.delivered || autoReplyResult.delivered
+          ? "Contact created successfully and email flow was triggered."
+          : "Contact created successfully.",
       data: {
         contact,
-        emailDelivery: emailResult
+        emailDelivery: {
+          adminNotification: adminEmailResult,
+          autoReply: autoReplyResult
+        }
       }
     });
   } catch (error) {

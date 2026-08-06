@@ -115,11 +115,22 @@ export function validateAssetPayload(payload) {
 
 export function validateProfilePayload(payload) {
   const errors = [];
+  const displayName = normalizeString(payload.displayName);
+  const brandInitials = normalizeString(payload.brandInitials);
   const heroTitle = normalizeString(payload.heroTitle);
   const goalDescription = normalizeString(payload.goalDescription);
+  const headerAvatarUrl = normalizeString(payload.headerAvatarUrl);
   const githubUrl = normalizeString(payload.githubUrl);
   const linkedinUrl = normalizeString(payload.linkedinUrl);
   const introSegments = Array.isArray(payload.introSegments) ? payload.introSegments : [];
+
+  if (displayName.length < 2) {
+    errors.push("Display name must be at least 2 characters.");
+  }
+
+  if (!brandInitials) {
+    errors.push("Brand initials are required.");
+  }
 
   if (heroTitle.length < 3) {
     errors.push("Hero title must be at least 3 characters.");
@@ -143,6 +154,10 @@ export function validateProfilePayload(payload) {
 
   if (!goalDescription) {
     errors.push("Goal description is required.");
+  }
+
+  if (headerAvatarUrl && !urlPattern.test(headerAvatarUrl)) {
+    errors.push("Header avatar URL must be a valid URL.");
   }
 
   if (githubUrl && !urlPattern.test(githubUrl)) {

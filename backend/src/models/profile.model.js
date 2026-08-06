@@ -31,6 +31,21 @@ const profileSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    displayName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    brandInitials: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    headerAvatarUrl: {
+      type: String,
+      trim: true,
+      default: ""
+    },
     introSegments: {
       type: [introSegmentSchema],
       default: [],

@@ -53,6 +53,7 @@ const codeRepos = [
 function App() {
   const location = useLocation();
   const adminSession = useAdminSession();
+  const publicProfileState = useProfile();
   const isAdminRoute = location.pathname.startsWith("/admin");
   const headerAdminLink = adminSession.user
     ? { to: "/admin", label: "Dashboard" }
@@ -79,6 +80,7 @@ function App() {
                 user={adminSession.user}
                 onLogout={adminSession.logout}
                 onUserChange={adminSession.setUser}
+                onPublicProfileChange={publicProfileState.setProfile}
               />
             </ProtectedAdminRoute>
           }
@@ -90,11 +92,11 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-700">
       <div className="px-4 py-8 sm:px-8 sm:pb-10 sm:pt-14 xl:pt-20">
-        <Header adminLink={headerAdminLink} />
+        <Header adminLink={headerAdminLink} profile={publicProfileState.profile} />
 
         <main>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<HomePage profileState={publicProfileState} />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:slug" element={<ProjectDetailPage />} />
             <Route path="/work" element={<WorkPage />} />
@@ -131,6 +133,7 @@ function AdminLoginPage({ isAuthenticated, authLoading, onLoginSuccess }) {
   });
   const [status, setStatus] = useState("idle");
   const [feedback, setFeedback] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -168,67 +171,63 @@ function AdminLoginPage({ isAuthenticated, authLoading, onLoginSuccess }) {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.12),_transparent_45%),linear-gradient(180deg,_#f8fafc,_#e2e8f0)] px-4 py-10 text-slate-800 sm:px-8 sm:py-16">
-      <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.92fr_1.08fr]">
-        <div className="rounded-[2rem] border border-white/70 bg-slate-900 p-8 text-white shadow-[0_30px_80px_rgba(15,23,42,0.24)] sm:p-10">
-          <p className="text-sm uppercase tracking-[0.28em] text-sky-300">Admin Access</p>
-          <h1 className="mt-6 text-4xl font-light sm:text-5xl">Portfolio control room</h1>
-          <p className="mt-6 text-lg leading-8 text-slate-300">
-            Khu vực này dành cho quản trị nội dung dự án, theo dõi contact và mở rộng CRUD trong ngày 6.
-          </p>
-          <div className="mt-10 grid gap-4">
-            {["JWT bearer authentication", "Protected admin route middleware", "Ready for project CRUD and contact management"].map((item) => (
-              <div key={item} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
+      <section className="mx-auto max-w-2xl">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-2xl sm:p-10">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Sign In</p>
-              <h2 className="mt-3 text-3xl font-light text-slate-900">Admin login</h2>
+              <p className="text-sm font-medium uppercase tracking-[0.28em] text-slate-400">Sign In</p>
+              <h2 className="mt-3 text-3xl font-medium text-slate-900">Admin login</h2>
             </div>
-            <Link to="/" className="text-sm font-medium uppercase tracking-[0.18em] text-sky-600">
+            <Link to="/" className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600">
               Back home
             </Link>
           </div>
 
-          <div className="mt-8 rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
-            {feedback || "Dùng tài khoản admin đã được seed từ biến môi trường `ADMIN_USERNAME` và `ADMIN_PASSWORD`."}
-          </div>
+          {feedback ? (
+            <div className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm font-medium text-rose-700">
+              {feedback}
+            </div>
+          ) : null}
 
           <form onSubmit={handleSubmit} className="mt-8 grid gap-5">
             <label className="grid gap-2">
-              <span className="text-sm font-medium text-slate-700">Username</span>
+              <span className="text-sm font-semibold text-slate-700">Username</span>
               <input
                 name="username"
                 value={credentials.username}
                 onChange={handleChange}
                 required
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-sky-400"
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-base font-medium text-slate-900 outline-none transition focus:border-sky-400"
                 placeholder="admin"
               />
             </label>
 
             <label className="grid gap-2">
-              <span className="text-sm font-medium text-slate-700">Password</span>
-              <input
-                name="password"
-                type="password"
-                value={credentials.password}
-                onChange={handleChange}
-                required
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-sky-400"
-                placeholder="••••••••"
-              />
+              <span className="text-sm font-semibold text-slate-700">Password</span>
+              <div className="flex items-center gap-3 rounded-2xl border border-slate-300 bg-white px-4 py-3.5 focus-within:border-sky-400">
+                <input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={credentials.password}
+                  onChange={handleChange}
+                  required
+                  className="min-w-0 flex-1 bg-transparent text-base font-medium text-slate-900 outline-none"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="shrink-0 text-sm font-semibold text-slate-500 transition hover:text-sky-600"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </label>
 
             <button
               type="submit"
               disabled={status === "submitting"}
-              className="mt-2 inline-flex w-fit items-center justify-center rounded-full bg-slate-900 px-7 py-3 text-sm font-medium uppercase tracking-[0.22em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 inline-flex w-fit items-center justify-center rounded-full bg-slate-900 px-7 py-3 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {status === "submitting" ? "Signing in..." : "Login to dashboard"}
             </button>
@@ -250,9 +249,13 @@ function AdminStatusScreen({ title, message }) {
   );
 }
 
-function HomePage() {
+function HomePage({ profileState }) {
   const { projects, loading, error } = useProjects();
-  const { profile, loading: loadingProfile, error: profileError } = useProfile();
+  const {
+    profile,
+    loading: loadingProfile,
+    error: profileError
+  } = profileState || useProfile();
   const { articles, loading: loadingArticles, error: articlesError } = useArticles();
   const featuredProjects = projects.filter((project) => project.featured).slice(0, 2);
   const featuredArticles = articles.slice(0, 2);
@@ -620,62 +623,81 @@ function ContactPage() {
   }
 
   return (
-    <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-      <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-        <div>
-          <h1 className="text-4xl font-light text-slate-800">Contact</h1>
-          <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-            Form này đã được nối trực tiếp tới `POST /api/contacts`, lưu dữ liệu xuống server và phản hồi lại trạng thái theo thời gian thực.
-          </p>
+    <section className="mx-auto max-w-5xl rounded-[2rem] border border-slate-200 bg-white px-6 py-10 shadow-xl sm:px-10 sm:py-14">
+      <div className="mx-auto max-w-3xl text-center">
+        <h1 className="text-4xl font-medium tracking-tight text-slate-900 sm:text-6xl">Contact Me</h1>
+        <p className="mt-6 text-lg leading-9 text-slate-600 sm:text-2xl">
+          If you&apos;d like to chat about a project or just have question, please fill in the form below. I aim to get
+          back within 2 days.
+        </p>
+      </div>
 
-          <div className="mt-8 rounded-2xl bg-slate-50 p-5">
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Submission status</p>
-            <p className="mt-3 text-lg text-slate-700">
-              {status === "idle" ? "Sẵn sàng nhận tin nhắn mới." : null}
-              {status === "submitting" ? "Đang gửi dữ liệu tới backend..." : null}
-              {status === "success" ? feedback : null}
-              {status === "error" ? feedback : null}
-            </p>
-          </div>
+      {(status !== "idle" || feedback) ? (
+        <div className="mx-auto mt-8 max-w-3xl">
+          <InfoCard
+            tone={status === "error" ? "error" : "default"}
+            message={
+              status === "submitting"
+                ? "Sending your message..."
+                : feedback || "Your message has been sent successfully."
+            }
+          />
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="mx-auto mt-12 grid max-w-3xl gap-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          <label className="grid gap-3">
+            <span className="text-xl font-medium text-slate-800">
+              Name <span className="text-rose-500">*</span>
+            </span>
+            <input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="rounded-2xl border border-slate-300 bg-white px-5 py-4 text-lg text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            />
+          </label>
+
+          <label className="grid gap-3">
+            <span className="text-xl font-medium text-slate-800">
+              Email <span className="text-rose-500">*</span>
+            </span>
+            <input
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="rounded-2xl border border-slate-300 bg-white px-5 py-4 text-lg text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            />
+          </label>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid gap-4">
-          <input
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-sky-400"
-            placeholder="Tên của bạn"
-          />
-          <input
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-sky-400"
-            placeholder="Email"
-          />
+        <label className="grid gap-3">
+          <span className="text-xl font-medium text-slate-800">
+            Message <span className="text-rose-500">*</span>
+          </span>
           <textarea
             name="message"
-            rows="6"
+            rows="7"
             value={formData.message}
             onChange={handleChange}
             required
             minLength="10"
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-sky-400"
-            placeholder="Nội dung liên hệ"
+            className="min-h-[220px] rounded-2xl border border-slate-300 bg-white px-5 py-4 text-lg text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
           />
-          <button
-            type="submit"
-            disabled={status === "submitting"}
-            className="w-fit rounded-full bg-sky-600 px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white transition hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {status === "submitting" ? "Sending..." : "Send Message"}
-          </button>
-        </form>
-      </div>
+        </label>
+
+        <button
+          type="submit"
+          disabled={status === "submitting"}
+          className="inline-flex w-fit items-center justify-center rounded-full bg-sky-600 px-8 py-4 text-base font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {status === "submitting" ? "Sending..." : "Send Message"}
+        </button>
+      </form>
     </section>
   );
 }
@@ -992,7 +1014,8 @@ function useProfile() {
   return {
     profile,
     loading,
-    error
+    error,
+    setProfile
   };
 }
 

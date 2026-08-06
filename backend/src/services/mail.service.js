@@ -69,6 +69,58 @@ export async function sendContactNotification(contact) {
   };
 }
 
+export async function sendContactAutoReply(contact) {
+  const mailTransporter = getTransporter();
+
+  if (!mailTransporter) {
+    return {
+      delivered: false,
+      skipped: true,
+      reason: "Email transport is not configured."
+    };
+  }
+
+  const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+  const replyToAddress = process.env.EMAIL_TO || process.env.EMAIL_USER;
+  const portfolioName = process.env.PORTFOLIO_OWNER_NAME || "Trung";
+  const subject = "Thanks for reaching out";
+
+  await mailTransporter.sendMail({
+    from: fromAddress,
+    to: contact.email,
+    replyTo: replyToAddress,
+    subject,
+    text: [
+      `Hi ${contact.name},`,
+      "",
+      "Thanks for reaching out through my portfolio.",
+      "I have received your message and will get back to you as soon as possible.",
+      "My usual response time is within 2 days.",
+      "",
+      "Your message:",
+      contact.message,
+      "",
+      `Best regards,`,
+      portfolioName
+    ].join("\n"),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.7;color:#0f172a">
+        <p>Hi ${escapeHtml(contact.name)},</p>
+        <p>Thanks for reaching out through my portfolio.</p>
+        <p>I have received your message and will get back to you as soon as possible. My usual response time is within 2 days.</p>
+        <p><strong>Your message:</strong></p>
+        <p style="white-space:pre-wrap;">${escapeHtml(contact.message)}</p>
+        <p style="margin-top:24px;">Best regards,<br />${escapeHtml(portfolioName)}</p>
+      </div>
+    `
+  });
+
+  return {
+    delivered: true,
+    skipped: false
+  };
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")

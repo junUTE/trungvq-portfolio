@@ -69,6 +69,10 @@ function normalizeProfilePayload(body, currentProfile = null) {
 
   return {
     key: "main",
+    displayName: body.displayName.trim(),
+    brandInitials: body.brandInitials.trim(),
+    headerAvatarUrl:
+      typeof body.headerAvatarUrl === "string" ? body.headerAvatarUrl.trim() : currentProfile?.headerAvatarUrl || "",
     heroTitle: body.heroTitle.trim(),
     introSegments,
     goalDescription: body.goalDescription.trim(),
@@ -535,6 +539,13 @@ export async function uploadAdminAvatar(request, response, next) {
     request.user.avatar = asset.url;
     request.user.avatarPublicId = asset.publicId;
     await request.user.save();
+
+    const profile = await Profile.findOne({ key: "main" });
+
+    if (profile) {
+      profile.headerAvatarUrl = asset.url;
+      await profile.save();
+    }
 
     if (previousAvatarPublicId && previousAvatarPublicId !== asset.publicId) {
       await deleteImageAsset(previousAvatarPublicId);

@@ -32,7 +32,12 @@ app.use(
   })
 );
 app.use(helmet());
-app.use(express.json());
+app.use(
+  express.json({
+    // 5MB binary image becomes larger after base64 encoding, so allow extra headroom.
+    limit: "10mb"
+  })
+);
 
 app.get("/", (_request, response) => {
   response.json({

@@ -45,6 +45,9 @@ const emptyAssetForm = {
 };
 
 const emptyProfileForm = {
+  displayName: "",
+  brandInitials: "",
+  headerAvatarUrl: "",
   heroTitle: "",
   introSegmentsJson: JSON.stringify(
     [
@@ -127,6 +130,9 @@ function toProfileForm(profile) {
   }
 
   return {
+    displayName: profile.displayName || "",
+    brandInitials: profile.brandInitials || "",
+    headerAvatarUrl: profile.headerAvatarUrl || "",
     heroTitle: profile.heroTitle || "",
     introSegmentsJson: JSON.stringify(profile.introSegments || [], null, 2),
     goalDescription: profile.goalDescription || "",
@@ -146,6 +152,9 @@ function toProfilePayload(form) {
   }
 
   return {
+    displayName: form.displayName,
+    brandInitials: form.brandInitials,
+    headerAvatarUrl: form.headerAvatarUrl,
     heroTitle: form.heroTitle,
     introSegments,
     goalDescription: form.goalDescription,
@@ -154,7 +163,7 @@ function toProfilePayload(form) {
   };
 }
 
-export default function AdminDashboard({ user, onLogout, onUserChange }) {
+export default function AdminDashboard({ user, onLogout, onUserChange, onPublicProfileChange }) {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [projects, setProjects] = useState([]);
@@ -365,6 +374,14 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
           : avatarForm
       );
       onUserChange?.(payload.data.user);
+      onPublicProfileChange?.((current) =>
+        current
+          ? {
+              ...current,
+              headerAvatarUrl: payload.data.user.avatar || "",
+            }
+          : current
+      );
       setAvatarForm({
         url: payload.data.user.avatar || "",
         publicId: payload.data.user.avatarPublicId || ""
@@ -466,6 +483,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
     try {
       const payload = await updateAdminProfile(toProfilePayload(profileForm));
       setProfileForm(toProfileForm(payload.data));
+      onPublicProfileChange?.(payload.data);
       setContentFeedback(payload.message || "Profile updated successfully.");
     } catch (updateError) {
       setContentFeedback(extractErrorMessage(updateError));
@@ -932,6 +950,14 @@ export default function AdminDashboard({ user, onLogout, onUserChange }) {
             <h2 className="mt-3 text-3xl font-light text-slate-900">Profile settings</h2>
 
             <form onSubmit={handleProfileSubmit} className="mt-6 grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Display name" labelClassName="text-sm font-medium text-slate-700">
+                  <input name="displayName" value={profileForm.displayName} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                </Field>
+                <Field label="Brand initials" labelClassName="text-sm font-medium text-slate-700">
+                  <input name="brandInitials" value={profileForm.brandInitials} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                </Field>
+              </div>
               <Field label="Hero title" labelClassName="text-sm font-medium text-slate-700">
                 <input name="heroTitle" value={profileForm.heroTitle} onChange={handleProfileFieldChange} className={lightFieldClassName} />
               </Field>
