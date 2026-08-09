@@ -102,7 +102,7 @@ function toProjectForm(project) {
     summary: project.summary || "",
     description: project.description || "",
     content: project.content || "",
-    technologies: Array.isArray(project.technologies) ? project.technologies.join(", ") : "",
+    technologies: Array.isArray(project.technologies) ? project.technologies.join("\n") : "",
     githubLink: project.githubLink || "",
     demoLink: project.demoLink || "",
     image: project.image || "",
@@ -117,7 +117,7 @@ function toProjectPayload(form) {
   return {
     ...form,
     technologies: form.technologies
-      .split(",")
+      .split(/\r?\n|,/)
       .map((item) => item.trim())
       .filter(Boolean),
     order: Number(form.order) || 0
@@ -733,13 +733,14 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                 />
               </Field>
 
-              <Field label="Technologies">
-                <input
+              <Field label="Technologies (one per line)">
+                <textarea
                   name="technologies"
+                  rows="5"
                   value={projectForm.technologies}
                   onChange={handleProjectFieldChange}
                   className={fieldClassName}
-                  placeholder="React, Node.js, MongoDB"
+                  placeholder={"React\nNode.js\nMongoDB"}
                 />
               </Field>
 

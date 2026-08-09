@@ -12,16 +12,43 @@ function getTransporter() {
   }
 
   if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
+    transporter = nodemailer.createTransport(getMailTransportConfig());
   }
 
   return transporter;
+}
+
+function getMailTransportConfig() {
+  const smtpHost = process.env.SMTP_HOST || getDefaultSmtpHost();
+  const smtpPort = Number(process.env.SMTP_PORT || getDefaultSmtpPort());
+  const smtpSecure = parseBoolean(process.env.SMTP_SECURE, smtpPort === 465);
+
+  return {
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 10000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 10000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 15000)
+  };
+}
+
+function getDefaultSmtpHost() {
+  const service = (process.env.EMAIL_SERVICE || "").toLowerCase();
+
+  if (service === "gmail" || !service) {
+    return "smtp.gmail.com";
+  }
+
+  return service;
+}
+
+function getDefaultSmtpPort() {
+  return "465";
 }
 
 export async function sendContactNotification(contact) {
@@ -39,34 +66,38 @@ export async function sendContactNotification(contact) {
   const toAddress = process.env.EMAIL_TO || process.env.EMAIL_USER;
   const subject = `New portfolio contact from ${contact.name}`;
 
-  await mailTransporter.sendMail({
-    from: fromAddress,
-    to: toAddress,
-    replyTo: contact.email,
-    subject,
-    text: [
-      "You received a new portfolio contact.",
-      `Name: ${contact.name}`,
-      `Email: ${contact.email}`,
-      "",
-      "Message:",
-      contact.message
-    ].join("\n"),
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
-        <h2 style="margin-bottom:16px;">New portfolio contact</h2>
-        <p><strong>Name:</strong> ${escapeHtml(contact.name)}</p>
-        <p><strong>Email:</strong> ${escapeHtml(contact.email)}</p>
-        <p><strong>Message:</strong></p>
-        <p style="white-space:pre-wrap;">${escapeHtml(contact.message)}</p>
-      </div>
-    `
-  });
+  try {
+    await mailTransporter.sendMail({
+      from: fromAddress,
+      to: toAddress,
+      replyTo: contact.email,
+      subject,
+      text: [
+        "You received a new portfolio contact.",
+        `Name: ${contact.name}`,
+        `Email: ${contact.email}`,
+        "",
+        "Message:",
+        contact.message
+      ].join("\n"),
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+          <h2 style="margin-bottom:16px;">New portfolio contact</h2>
+          <p><strong>Name:</strong> ${escapeHtml(contact.name)}</p>
+          <p><strong>Email:</strong> ${escapeHtml(contact.email)}</p>
+          <p><strong>Message:</strong></p>
+          <p style="white-space:pre-wrap;">${escapeHtml(contact.message)}</p>
+        </div>
+      `
+    });
 
-  return {
-    delivered: true,
-    skipped: false
-  };
+    return {
+      delivered: true,
+      skipped: false
+    };
+  } catch (error) {
+    return toMailFailureResult(error);
+  }
 }
 
 export async function sendContactAutoReply(contact) {
@@ -85,40 +116,44 @@ export async function sendContactAutoReply(contact) {
   const portfolioName = process.env.PORTFOLIO_OWNER_NAME || "Trung";
   const subject = "Thanks for reaching out";
 
-  await mailTransporter.sendMail({
-    from: fromAddress,
-    to: contact.email,
-    replyTo: replyToAddress,
-    subject,
-    text: [
-      `Hi ${contact.name},`,
-      "",
-      "Thanks for reaching out through my portfolio.",
-      "I have received your message and will get back to you as soon as possible.",
-      "My usual response time is within 2 days.",
-      "",
-      "Your message:",
-      contact.message,
-      "",
-      `Best regards,`,
-      portfolioName
-    ].join("\n"),
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.7;color:#0f172a">
-        <p>Hi ${escapeHtml(contact.name)},</p>
-        <p>Thanks for reaching out through my portfolio.</p>
-        <p>I have received your message and will get back to you as soon as possible. My usual response time is within 2 days.</p>
-        <p><strong>Your message:</strong></p>
-        <p style="white-space:pre-wrap;">${escapeHtml(contact.message)}</p>
-        <p style="margin-top:24px;">Best regards,<br />${escapeHtml(portfolioName)}</p>
-      </div>
-    `
-  });
+  try {
+    await mailTransporter.sendMail({
+      from: fromAddress,
+      to: contact.email,
+      replyTo: replyToAddress,
+      subject,
+      text: [
+        `Hi ${contact.name},`,
+        "",
+        "Thanks for reaching out through my portfolio.",
+        "I have received your message and will get back to you as soon as possible.",
+        "My usual response time is within 2 days.",
+        "",
+        "Your message:",
+        contact.message,
+        "",
+        `Best regards,`,
+        portfolioName
+      ].join("\n"),
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.7;color:#0f172a">
+          <p>Hi ${escapeHtml(contact.name)},</p>
+          <p>Thanks for reaching out through my portfolio.</p>
+          <p>I have received your message and will get back to you as soon as possible. My usual response time is within 2 days.</p>
+          <p><strong>Your message:</strong></p>
+          <p style="white-space:pre-wrap;">${escapeHtml(contact.message)}</p>
+          <p style="margin-top:24px;">Best regards,<br />${escapeHtml(portfolioName)}</p>
+        </div>
+      `
+    });
 
-  return {
-    delivered: true,
-    skipped: false
-  };
+    return {
+      delivered: true,
+      skipped: false
+    };
+  } catch (error) {
+    return toMailFailureResult(error);
+  }
 }
 
 function escapeHtml(value) {
@@ -128,4 +163,29 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function toMailFailureResult(error) {
+  return {
+    delivered: false,
+    skipped: false,
+    reason: error?.message || "Unknown mail delivery error.",
+    code: error?.code || "MAIL_DELIVERY_FAILED"
+  };
+}
+
+function parseBoolean(value, fallbackValue) {
+  if (typeof value !== "string") {
+    return fallbackValue;
+  }
+
+  if (value.toLowerCase() === "true") {
+    return true;
+  }
+
+  if (value.toLowerCase() === "false") {
+    return false;
+  }
+
+  return fallbackValue;
 }

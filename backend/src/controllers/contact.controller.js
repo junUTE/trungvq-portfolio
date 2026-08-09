@@ -23,11 +23,16 @@ export async function createContact(request, response, next) {
       sendContactNotification(contact),
       sendContactAutoReply(contact)
     ]);
+    const hasDeliveredEmail = adminEmailResult.delivered || autoReplyResult.delivered;
+    const hasMailFailure =
+      (!adminEmailResult.skipped && !adminEmailResult.delivered) ||
+      (!autoReplyResult.skipped && !autoReplyResult.delivered);
 
     return response.status(201).json({
-      message:
-        adminEmailResult.delivered || autoReplyResult.delivered
-          ? "Contact created successfully and email flow was triggered."
+      message: hasDeliveredEmail
+        ? "Contact created successfully and email flow was triggered."
+        : hasMailFailure
+          ? "Contact created successfully, but the email flow could not be completed."
           : "Contact created successfully.",
       data: {
         contact,

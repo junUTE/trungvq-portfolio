@@ -50,14 +50,245 @@ const codeRepos = [
   }
 ];
 
+const uiText = {
+  homeSocialLead: {
+    vi: "Bạn có thể tìm mình trên ",
+    en: "You can find me on "
+  },
+  and: {
+    vi: "và ",
+    en: "and "
+  },
+  code: {
+    vi: "Code",
+    en: "Code"
+  },
+  projects: {
+    vi: "Dự án",
+    en: "Projects"
+  },
+  articles: {
+    vi: "Bài viết",
+    en: "Articles"
+  },
+  work: {
+    vi: "Kinh nghiệm",
+    en: "Work"
+  },
+  contact: {
+    vi: "Liên hệ",
+    en: "Contact"
+  },
+  viewRepo: {
+    vi: "Xem repo",
+    en: "View Repo"
+  },
+  homeProjectsLoading: {
+    vi: "Đang tải dự án từ backend...",
+    en: "Loading projects from the backend..."
+  },
+  homeProjectsEmpty: {
+    vi: "Chưa có dự án nổi bật nào được publish.",
+    en: "No featured projects have been published yet."
+  },
+  homeArticlesLoading: {
+    vi: "Đang tải bài viết...",
+    en: "Loading articles..."
+  },
+  homeArticlesEmpty: {
+    vi: "Chưa có bài viết nào được publish.",
+    en: "No published articles yet."
+  },
+  workIntro: {
+    vi: "Trang này tổng hợp các kinh nghiệm và case study ngắn được lấy trực tiếp từ backend.",
+    en: "This page pulls experience highlights and short case studies directly from the backend."
+  },
+  workLoading: {
+    vi: "Đang tải work highlights...",
+    en: "Loading work highlights..."
+  },
+  workEmpty: {
+    vi: "Chưa có work item nào được publish.",
+    en: "No published work items yet."
+  },
+  articlesIntro: {
+    vi: "Trang này hiển thị bài viết kỹ thuật và chia sẻ học tập từ dữ liệu thật trong database.",
+    en: "This page shows technical writing and learning notes from real database content."
+  },
+  articlesLoading: {
+    vi: "Đang tải bài viết...",
+    en: "Loading articles..."
+  },
+  articlesEmpty: {
+    vi: "Chưa có bài viết nào được publish.",
+    en: "No published articles yet."
+  },
+  projectsIntro: {
+    vi: "Một số sản phẩm và trải nghiệm mình đã xây dựng, từ ý tưởng đến giao diện và phần triển khai thực tế.",
+    en: "A selection of products and experiments I have built, from concept through interface and implementation."
+  },
+  projectsLoading: {
+    vi: "Đang tải danh sách dự án...",
+    en: "Loading project list..."
+  },
+  projectsEmpty: {
+    vi: "Chưa có dự án nào được publish.",
+    en: "No published projects yet."
+  },
+  backToProjects: {
+    vi: "Quay lại dự án",
+    en: "Back to projects"
+  },
+  visitSite: {
+    vi: "Xem website",
+    en: "Visit Site"
+  },
+  githubRepository: {
+    vi: "Kho GitHub",
+    en: "GitHub Repository"
+  },
+  quickSnapshot: {
+    vi: "Tóm tắt nhanh",
+    en: "Quick Snapshot"
+  },
+  featuredProjectNote: {
+    vi: "Đây là dự án nổi bật đang được ưu tiên hiển thị trên trang public.",
+    en: "This is a featured project currently prioritised on the public site."
+  },
+  publishedProjectNote: {
+    vi: "Dự án này đang được xuất bản trong danh sách project public.",
+    en: "This project is currently published in the public projects listing."
+  },
+  overview: {
+    vi: "Tổng quan",
+    en: "Overview"
+  },
+  whatThisProjectDoes: {
+    vi: "Dự án này làm gì",
+    en: "What this project does"
+  },
+  techStack: {
+    vi: "Công nghệ",
+    en: "Tech Stack"
+  },
+  builtWith: {
+    vi: "Xây dựng với",
+    en: "Built With"
+  },
+  links: {
+    vi: "Liên kết",
+    en: "Links"
+  },
+  sourceCode: {
+    vi: "Mã nguồn",
+    en: "Source Code"
+  },
+  buildNotes: {
+    vi: "Ghi chú xây dựng",
+    en: "Build Notes"
+  },
+  howItWasPutTogether: {
+    vi: "Dự án được triển khai như thế nào",
+    en: "How it was put together"
+  },
+  nextStep: {
+    vi: "Bước tiếp theo",
+    en: "Next Step"
+  },
+  exploreLiveProject: {
+    vi: "Khám phá dự án thực tế",
+    en: "Explore the live project"
+  },
+  exploreLiveProjectText: {
+    vi: "Nếu bạn muốn xem kỹ hơn trải nghiệm thật, mình đã để sẵn link demo và source code ngay bên dưới.",
+    en: "If you want to explore the real product in more detail, the live demo and source code are linked below."
+  },
+  openDemo: {
+    vi: "Mở demo",
+    en: "Open Demo"
+  },
+  viewRepository: {
+    vi: "Xem repository",
+    en: "View Repository"
+  },
+  projectPreview: {
+    vi: "Xem trước dự án",
+    en: "Project Preview"
+  },
+  viewDetails: {
+    vi: "Xem chi tiết",
+    en: "View Details"
+  },
+  visibleProjects: {
+    vi: "dự án hiển thị",
+    en: "visible projects"
+  },
+  noLinkYet: {
+    vi: "chưa được cập nhật.",
+    en: "is not available yet."
+  },
+  contactTitle: {
+    vi: "Liên hệ",
+    en: "Contact Me"
+  },
+  contactIntro: {
+    vi: "Nếu bạn muốn trao đổi về một dự án hoặc chỉ đơn giản là kết nối, hãy điền form bên dưới. Mình sẽ cố gắng phản hồi trong vòng 2 ngày.",
+    en: "If you'd like to chat about a project or simply connect, please fill out the form below. I aim to reply within 2 days."
+  },
+  sendingMessage: {
+    vi: "Đang gửi...",
+    en: "Sending..."
+  },
+  sendMessage: {
+    vi: "Gửi tin nhắn",
+    en: "Send Message"
+  },
+  contactSuccess: {
+    vi: "Tin nhắn đã được gửi thành công.",
+    en: "Your message has been sent successfully."
+  },
+  name: {
+    vi: "Họ tên",
+    en: "Name"
+  },
+  message: {
+    vi: "Tin nhắn",
+    en: "Message"
+  },
+  notes: {
+    vi: "Ghi chú",
+    en: "Notes"
+  },
+  featured: {
+    vi: "Nổi bật",
+    en: "Featured"
+  },
+  publishedProjectsCountSuffix: {
+    vi: "dự án đã đăng",
+    en: "published projects"
+  }
+};
+
 function App() {
   const location = useLocation();
   const adminSession = useAdminSession();
   const publicProfileState = useProfile();
+  const [language, setLanguage] = useState(() => {
+    if (typeof window === "undefined") {
+      return "vi";
+    }
+
+    return window.localStorage.getItem("portfolio-language") || "vi";
+  });
   const isAdminRoute = location.pathname.startsWith("/admin");
-  const headerAdminLink = adminSession.user
-    ? { to: "/admin", label: "Dashboard" }
-    : { to: "/admin-login", label: "Admin" };
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem("portfolio-language", language);
+    document.documentElement.lang = language;
+  }, [language]);
 
   if (isAdminRoute) {
     return (
@@ -90,24 +321,24 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-700">
+    <div className="min-h-screen bg-transparent text-slate-700">
       <div className="px-4 py-8 sm:px-8 sm:pb-10 sm:pt-14 xl:pt-20">
-        <Header adminLink={headerAdminLink} profile={publicProfileState.profile} />
+        <Header profile={publicProfileState.profile} language={language} onLanguageChange={setLanguage} />
 
         <main>
           <Routes>
-            <Route path="/" element={<HomePage profileState={publicProfileState} />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/projects/:slug" element={<ProjectDetailPage />} />
-            <Route path="/work" element={<WorkPage />} />
-            <Route path="/articles" element={<ArticlesPage />} />
-            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/" element={<HomePage profileState={publicProfileState} language={language} />} />
+            <Route path="/projects" element={<ProjectsPage language={language} />} />
+            <Route path="/projects/:slug" element={<ProjectDetailPage language={language} />} />
+            <Route path="/work" element={<WorkPage language={language} />} />
+            <Route path="/articles" element={<ArticlesPage language={language} />} />
+            <Route path="/contact" element={<ContactPage language={language} />} />
             <Route path="/admin-login" element={<Navigate to="/admin-login" replace />} />
             <Route path="/admin" element={<Navigate to="/admin" replace />} />
           </Routes>
         </main>
 
-        <Footer />
+        <Footer language={language} />
       </div>
     </div>
   );
@@ -249,7 +480,7 @@ function AdminStatusScreen({ title, message }) {
   );
 }
 
-function HomePage({ profileState }) {
+function HomePage({ profileState, language }) {
   const { projects, loading, error } = useProjects();
   const {
     profile,
@@ -263,25 +494,29 @@ function HomePage({ profileState }) {
   return (
     <div className="space-y-10 sm:space-y-14 xl:space-y-20">
       <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl sm:rounded-3xl sm:p-14">
-        {loadingProfile ? <InfoCard message="Đang tải profile..." /> : null}
+        {loadingProfile ? <InfoCard message={language === "en" ? "Loading profile..." : "Đang tải profile..."} /> : null}
         {profileError ? <InfoCard tone="error" message={profileError} /> : null}
         {!loadingProfile && !profileError && profile ? (
           <div className="space-y-5">
-            <h1 className="text-3xl font-light tracking-tight text-slate-800 sm:text-5xl">{profile.heroTitle}</h1>
-            <p className="text-xl leading-relaxed text-slate-700 sm:text-2xl">
+            <h1 className="text-3xl font-light tracking-tight text-slate-800 sm:text-5xl">
+              {getLocalizedValue(profile.heroTitle, language)}
+            </h1>
+            <p className="hero-intro-text text-xl leading-relaxed text-slate-700 sm:text-2xl">
               {(profile.introSegments || []).map((segment, index) => (
-                <Highlight key={`${segment.text}-${index}`} tone={segment.tone}>
-                  {segment.text}
+                <Highlight key={`${getLocalizedValue(segment.text, language)}-${index}`} tone={segment.tone}>
+                  {getLocalizedValue(segment.text, language)}
                 </Highlight>
               ))}
             </p>
-            <p className="text-lg leading-relaxed text-slate-600 sm:text-xl">{profile.goalDescription}</p>
             <p className="text-lg leading-relaxed text-slate-600 sm:text-xl">
-              Bạn có thể tìm mình trên{" "}
+              {getLocalizedValue(profile.goalDescription, language)}
+            </p>
+            <p className="text-lg leading-relaxed text-slate-600 sm:text-xl">
+              {getLocalizedValue(uiText.homeSocialLead, language)}
               <a className="font-normal text-sky-600 hover:opacity-60" href={profile.githubUrl} target="_blank" rel="noreferrer">
                 GitHub
               </a>{" "}
-              và{" "}
+              {getLocalizedValue(uiText.and, language)}
               <a className="font-normal text-sky-600 hover:opacity-60" href={profile.linkedinUrl} target="_blank" rel="noreferrer">
                 LinkedIn
               </a>
@@ -291,7 +526,7 @@ function HomePage({ profileState }) {
         ) : null}
       </section>
 
-      <SectionShell title="Code">
+      <SectionShell title={getLocalizedValue(uiText.code, language)}>
         <div className="grid grid-cols-1 gap-4 md:gap-7 sm:grid-cols-2 lg:grid-cols-3">
           {codeRepos.map((repo) => (
             <article
@@ -314,7 +549,7 @@ function HomePage({ profileState }) {
                 <p className="mt-4 text-sm leading-6 text-slate-600">{repo.summary}</p>
 
                 <p className="mt-3 inline-flex items-center text-sm text-sky-600">
-                  View Repo
+                  {getLocalizedValue(uiText.viewRepo, language)}
                   <ArrowIcon className="ml-1 h-4 w-4" />
                 </p>
               </div>
@@ -332,32 +567,34 @@ function HomePage({ profileState }) {
         </div>
       </SectionShell>
 
-      <SectionShell title="Projects">
-        {loading ? <InfoCard message="Đang tải project từ backend..." /> : null}
+      <SectionShell title={getLocalizedValue(uiText.projects, language)}>
+        {loading ? <InfoCard message={getLocalizedValue(uiText.homeProjectsLoading, language)} /> : null}
         {error ? <InfoCard tone="error" message={error} /> : null}
         {!loading && !error ? (
           <div className="grid grid-cols-1 gap-10 sm:gap-5 md:gap-7 lg:grid-cols-2">
             {featuredProjects.length > 0 ? (
-              featuredProjects.map((project) => <ProjectShowcaseCard key={project._id || project.slug} project={project} />)
+              featuredProjects.map((project) => (
+                <ProjectShowcaseCard key={project._id || project.slug} project={project} language={language} />
+              ))
             ) : (
-              <InfoCard message="Chưa có project nổi bật nào được publish." />
+              <InfoCard message={getLocalizedValue(uiText.homeProjectsEmpty, language)} />
             )}
           </div>
         ) : null}
       </SectionShell>
 
-      <SectionShell title="Articles">
-        {loadingArticles ? <InfoCard message="Đang tải bài viết..." /> : null}
+      <SectionShell title={getLocalizedValue(uiText.articles, language)}>
+        {loadingArticles ? <InfoCard message={getLocalizedValue(uiText.homeArticlesLoading, language)} /> : null}
         {articlesError ? <InfoCard tone="error" message={articlesError} /> : null}
         {!loadingArticles && !articlesError ? (
           featuredArticles.length > 0 ? (
             <div className="space-y-6 sm:space-y-8">
               {featuredArticles.map((article) => (
-                <ArticleCard key={article._id || article.slug} article={article} />
+                <ArticleCard key={article._id || article.slug} article={article} language={language} />
               ))}
             </div>
           ) : (
-            <InfoCard message="Chưa có bài viết nào được publish." />
+            <InfoCard message={getLocalizedValue(uiText.homeArticlesEmpty, language)} />
           )
         ) : null}
       </SectionShell>
@@ -365,17 +602,17 @@ function HomePage({ profileState }) {
   );
 }
 
-function WorkPage() {
+function WorkPage({ language }) {
   const { workItems, loading, error } = useWorkItems();
 
   return (
     <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-      <h1 className="text-4xl font-light text-slate-800">Work</h1>
+      <h1 className="text-4xl font-semibold text-slate-800">{getLocalizedValue(uiText.work, language)}</h1>
       <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-        Trang work đang lấy trực tiếp các kinh nghiệm và case study ngắn từ backend thay vì nội dung hardcode.
+        {getLocalizedValue(uiText.workIntro, language)}
       </p>
 
-      {loading ? <InfoCard className="mt-8" message="Đang tải work highlights..." /> : null}
+      {loading ? <InfoCard className="mt-8" message={getLocalizedValue(uiText.workLoading, language)} /> : null}
       {error ? <InfoCard className="mt-8" tone="error" message={error} /> : null}
       {!loading && !error ? (
         workItems.length > 0 ? (
@@ -403,95 +640,75 @@ function WorkPage() {
             ))}
           </div>
         ) : (
-          <InfoCard className="mt-8" message="Chưa có work item nào được publish." />
+          <InfoCard className="mt-8" message={getLocalizedValue(uiText.workEmpty, language)} />
         )
       ) : null}
     </section>
   );
 }
 
-function ArticlesPage() {
+function ArticlesPage({ language }) {
   const { articles, loading, error } = useArticles();
 
   return (
     <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-      <h1 className="text-4xl font-light text-slate-800">Articles</h1>
+      <h1 className="text-4xl font-semibold text-slate-800">{getLocalizedValue(uiText.articles, language)}</h1>
       <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-        Trang articles đang dùng dữ liệu thật từ database để hiển thị bài viết kỹ thuật và chia sẻ học tập.
+        {getLocalizedValue(uiText.articlesIntro, language)}
       </p>
 
-      {loading ? <InfoCard className="mt-8" message="Đang tải bài viết..." /> : null}
+      {loading ? <InfoCard className="mt-8" message={getLocalizedValue(uiText.articlesLoading, language)} /> : null}
       {error ? <InfoCard className="mt-8" tone="error" message={error} /> : null}
       {!loading && !error ? (
         articles.length > 0 ? (
           <div className="mt-8 space-y-6 sm:space-y-8">
             {articles.map((article) => (
-              <ArticleCard key={article._id || article.slug} article={article} />
+              <ArticleCard key={article._id || article.slug} article={article} language={language} />
             ))}
           </div>
         ) : (
-          <InfoCard className="mt-8" message="Chưa có bài viết nào được publish." />
+          <InfoCard className="mt-8" message={getLocalizedValue(uiText.articlesEmpty, language)} />
         )
       ) : null}
     </section>
   );
 }
 
-function ProjectsPage() {
+function ProjectsPage({ language }) {
   const { projects, loading, error } = useProjects();
-  const [activeTech, setActiveTech] = useState("All");
-
-  const technologies = ["All", ...new Set(projects.flatMap((project) => project.technologies || []))];
-  const filteredProjects =
-    activeTech === "All" ? projects : projects.filter((project) => (project.technologies || []).includes(activeTech));
 
   return (
-    <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-      <div className="flex flex-col gap-5 border-b border-slate-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-4xl font-light text-slate-800">Projects</h1>
-          <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-            Dữ liệu được lấy trực tiếp từ backend, có filter theo công nghệ và route chi tiết bằng slug.
-          </p>
-        </div>
-        <p className="text-sm uppercase tracking-[0.24em] text-slate-400">{projects.length} published projects</p>
+    <section className="mx-auto max-w-7xl">
+      <div className="mx-auto mb-14 max-w-5xl xl:mb-20">
+        <h1 className="font-['Be_Vietnam_Pro'] text-4xl font-medium text-slate-900 sm:text-5xl">{getLocalizedValue(uiText.projects, language)}</h1>
+        <p className="mt-5 max-w-3xl text-xl leading-relaxed text-slate-700 sm:text-2xl">
+          {getLocalizedValue(uiText.projectsIntro, language)}
+        </p>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        {technologies.map((tech) => (
-          <button
-            key={tech}
-            type="button"
-            onClick={() => setActiveTech(tech)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-              activeTech === tech
-                ? "bg-sky-600 text-white shadow-lg shadow-sky-100"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            {tech}
-          </button>
-        ))}
-      </div>
-
-      {loading ? <InfoCard className="mt-8" message="Đang tải danh sách project..." /> : null}
-      {error ? <InfoCard className="mt-8" tone="error" message={error} /> : null}
+      {loading ? <InfoCard className="mx-auto mt-8 max-w-5xl" message={getLocalizedValue(uiText.projectsLoading, language)} /> : null}
+      {error ? <InfoCard className="mx-auto mt-8 max-w-5xl" tone="error" message={error} /> : null}
       {!loading && !error ? (
-        filteredProjects.length > 0 ? (
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            {filteredProjects.map((project) => (
-              <ProjectGridCard key={project._id || project.slug} project={project} />
+        projects.length > 0 ? (
+          <div className="mx-auto mt-14 max-w-7xl space-y-14 xl:mt-20 xl:space-y-20">
+            {projects.map((project, index) => (
+              <ProjectListingCard
+                key={project._id || project.slug}
+                project={project}
+                reverse={index % 2 === 1}
+                language={language}
+              />
             ))}
           </div>
         ) : (
-          <InfoCard className="mt-8" message="Không có project nào khớp với công nghệ đang chọn." />
+          <InfoCard className="mx-auto mt-8 max-w-5xl" message={getLocalizedValue(uiText.projectsEmpty, language)} />
         )
       ) : null}
     </section>
   );
 }
 
-function ProjectDetailPage() {
+function ProjectDetailPage({ language }) {
   const { slug } = useParams();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -530,68 +747,164 @@ function ProjectDetailPage() {
   }, [slug]);
 
   return (
-    <section className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-      {loading ? <InfoCard className="m-6" message="Đang tải chi tiết project..." /> : null}
-      {error ? <InfoCard className="m-6" tone="error" message={error} /> : null}
+    <section className="mx-auto max-w-5xl">
+      {loading ? <InfoCard className="mb-6" message={language === "en" ? "Loading project details..." : "Đang tải chi tiết dự án..."} /> : null}
+      {error ? <InfoCard className="mb-6" tone="error" message={error} /> : null}
       {!loading && !error && project ? (
-        <>
-          <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="p-6 sm:p-10">
-              <Link to="/projects" className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.2em] text-sky-600">
-                <ArrowLeftIcon className="h-4 w-4" />
-                Back to projects
-              </Link>
+        <div className="space-y-10 sm:space-y-14">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:items-start">
+              <div>
+                <Link
+                  to="/projects"
+                  className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.22em] text-sky-600 transition hover:opacity-70"
+                >
+                  <ArrowLeftIcon className="h-4 w-4" />
+                  {getLocalizedValue(uiText.backToProjects, language)}
+                </Link>
 
-              <h1 className="mt-6 text-4xl font-light text-slate-800 sm:text-5xl">{project.title}</h1>
-              <p className="mt-4 text-lg leading-8 text-slate-600">{project.description}</p>
+                <h1 className="mt-6 font-['Be_Vietnam_Pro'] text-4xl font-medium leading-tight text-slate-900 sm:text-5xl">
+                  {project.title}
+                </h1>
+                <p className="mt-5 max-w-3xl text-xl leading-relaxed text-slate-700">{project.summary}</p>
+                <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">{project.description}</p>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                {(project.technologies || []).map((tech) => (
-                  <span key={tech} className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">
-                    {tech}
-                  </span>
-                ))}
+                <div className="mt-8 flex flex-wrap gap-3">
+                  {(project.technologies || []).map((tech) => (
+                    <span
+                      key={tech}
+                      className="rounded-full border border-slate-200 bg-sky-50/80 px-4 py-2 text-sm font-medium text-slate-700"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                  <LinkCard href={project.demoLink} label={getLocalizedValue(uiText.visitSite, language)} language={language} />
+                  <LinkCard href={project.githubLink} label={getLocalizedValue(uiText.githubRepository, language)} language={language} />
+                </div>
               </div>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                <LinkCard href={project.demoLink} label="Live Demo" />
-                <LinkCard href={project.githubLink} label="GitHub Repository" />
-              </div>
-            </div>
+              <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-[0px_8px_24px_rgba(0,0,0,0.05)] sm:p-5">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                  <div className="relative flex w-full items-center gap-3 border-b border-slate-200 bg-gray-50 px-[58px] py-3">
+                    <div className="absolute left-4 top-1/2 flex -translate-y-1/2 gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                      <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                      <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                    </div>
 
-            <div className="border-t border-slate-200 bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-6 lg:border-l lg:border-t-0 sm:p-10">
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
-                {project.image ? (
-                  <img src={project.image} alt={project.title} className="h-64 w-full object-cover" />
-                ) : (
-                  <div className="flex h-64 items-center justify-center bg-slate-100 text-sm uppercase tracking-[0.24em] text-slate-400">
-                    No preview image
+                    <div className="flex-1 truncate text-center font-mono text-xs text-slate-400">
+                      {project.slug || "preview"}.case-study
+                    </div>
                   </div>
-                )}
-                <div className="space-y-3 p-6">
-                  <p className="text-xs uppercase tracking-[0.24em] text-sky-600">Project Snapshot</p>
-                  <p className="text-lg font-medium text-slate-800">{project.summary}</p>
-                  <p className="text-sm leading-6 text-slate-600">
-                    {project.featured ? "Đây là một project nổi bật trên trang public." : "Project này đang xuất hiện trong danh sách published."}
+
+                  <div className="aspect-video w-full bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-4 sm:p-6">
+                    {project.image ? (
+                      <img
+                        src={project.image}
+                        alt={project.title}
+                        className="h-full w-full rounded-2xl border border-slate-200/80 object-cover object-top shadow-lg"
+                      />
+                    ) : (
+                      <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.22em] text-sky-600">{getLocalizedValue(uiText.projectPreview, language)}</p>
+                          <h2 className="mt-3 text-2xl font-medium text-slate-800">{project.title}</h2>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">{project.summary}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl bg-slate-50 px-5 py-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{getLocalizedValue(uiText.quickSnapshot, language)}</p>
+                  <p className="mt-3 text-base leading-7 text-slate-600">
+                    {project.featured
+                      ? getLocalizedValue(uiText.featuredProjectNote, language)
+                      : getLocalizedValue(uiText.publishedProjectNote, language)}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-slate-200 px-6 py-8 sm:px-10">
-            <div className="max-w-3xl">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Implementation Notes</p>
-              <p className="mt-4 text-lg leading-8 text-slate-600">{project.content}</p>
-            </div>
+          <div className="grid gap-6 md:grid-cols-5">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl md:col-span-3 sm:p-10">
+              <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.overview, language)}</p>
+              <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
+                {getLocalizedValue(uiText.whatThisProjectDoes, language)}
+              </h2>
+              <div className="mt-6 space-y-5 text-lg leading-8 text-slate-600">
+                {splitParagraphs(project.description).map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            </section>
+
+            <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl md:col-span-2 sm:p-10">
+              <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.techStack, language)}</p>
+              <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900">{getLocalizedValue(uiText.builtWith, language)}</h2>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {(project.technologies || []).map((tech) => (
+                  <span
+                    key={tech}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-200"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-8 space-y-3 rounded-2xl bg-slate-50 p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{getLocalizedValue(uiText.links, language)}</p>
+                <ExternalLink href={project.demoLink} label={getLocalizedValue(uiText.visitSite, language)} />
+                <ExternalLink href={project.githubLink} label={getLocalizedValue(uiText.sourceCode, language)} />
+              </div>
+            </aside>
           </div>
-        </>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+            <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.buildNotes, language)}</p>
+            <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
+              {getLocalizedValue(uiText.howItWasPutTogether, language)}
+            </h2>
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              {splitParagraphs(project.content).map((paragraph, index) => (
+                <div key={`${index}-${paragraph.slice(0, 24)}`} className="rounded-2xl bg-slate-50 p-5 sm:p-6">
+                  <p className="text-base leading-8 text-slate-600">{paragraph}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.nextStep, language)}</p>
+                <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
+                  {getLocalizedValue(uiText.exploreLiveProject, language)}
+                </h2>
+                <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
+                  {getLocalizedValue(uiText.exploreLiveProjectText, language)}
+                </p>
+              </div>
+
+              <div className="grid w-full gap-4 sm:w-auto sm:grid-cols-2">
+                <LinkCard href={project.demoLink} label={getLocalizedValue(uiText.openDemo, language)} language={language} />
+                <LinkCard href={project.githubLink} label={getLocalizedValue(uiText.viewRepository, language)} language={language} />
+              </div>
+            </div>
+          </section>
+        </div>
       ) : null}
     </section>
   );
 }
 
-function ContactPage() {
+function ContactPage({ language }) {
   const initialForm = { name: "", email: "", message: "" };
   const [formData, setFormData] = useState(initialForm);
   const [status, setStatus] = useState("idle");
@@ -605,7 +918,7 @@ function ContactPage() {
     try {
       const payload = await createContact(formData);
       setStatus("success");
-      setFeedback(payload.message || "Tin nhắn đã được gửi thành công.");
+      setFeedback(payload.message || getLocalizedValue(uiText.contactSuccess, language));
       setFormData(initialForm);
     } catch (error) {
       setStatus("error");
@@ -623,45 +936,38 @@ function ContactPage() {
   }
 
   return (
-    <section className="mx-auto max-w-5xl rounded-[2rem] border border-slate-200 bg-white px-6 py-10 shadow-xl sm:px-10 sm:py-14">
+    <section className="mx-auto max-w-5xl">
       <div className="mx-auto max-w-3xl text-center">
-        <h1 className="text-4xl font-medium tracking-tight text-slate-900 sm:text-6xl">Contact Me</h1>
+        <p className="text-sm uppercase tracking-[0.28em] text-sky-600">
+          {language === "en" ? "Let's Talk" : "Cùng Trao Đổi"}
+        </p>
+        <h1 className="mt-4 text-4xl font-medium tracking-tight text-slate-900 sm:text-6xl">{getLocalizedValue(uiText.contactTitle, language)}</h1>
         <p className="mt-6 text-lg leading-9 text-slate-600 sm:text-2xl">
-          If you&apos;d like to chat about a project or just have question, please fill in the form below. I aim to get
-          back within 2 days.
+          {getLocalizedValue(uiText.contactIntro, language)}
         </p>
       </div>
 
-      {(status !== "idle" || feedback) ? (
-        <div className="mx-auto mt-8 max-w-3xl">
-          <InfoCard
-            tone={status === "error" ? "error" : "default"}
-            message={
-              status === "submitting"
-                ? "Sending your message..."
-                : feedback || "Your message has been sent successfully."
-            }
-          />
-        </div>
-      ) : null}
-
-      <form onSubmit={handleSubmit} className="mx-auto mt-12 grid max-w-3xl gap-6">
+      <form
+        onSubmit={handleSubmit}
+        className="mx-auto mt-12 grid max-w-4xl gap-6 rounded-[2rem] border border-white/60 bg-white/55 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-8 md:p-10"
+      >
         <div className="grid gap-6 md:grid-cols-2">
           <label className="grid gap-3">
-            <span className="text-xl font-medium text-slate-800">
-              Name <span className="text-rose-500">*</span>
+            <span className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+              {getLocalizedValue(uiText.name, language)} <span className="text-rose-500">*</span>
             </span>
             <input
               name="name"
               value={formData.name}
               onChange={handleChange}
               required
-              className="rounded-2xl border border-slate-300 bg-white px-5 py-4 text-lg text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              className="rounded-2xl border border-white/70 bg-white/80 px-5 py-4 text-lg text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              placeholder={language === "en" ? "Your name" : "Tên của bạn"}
             />
           </label>
 
           <label className="grid gap-3">
-            <span className="text-xl font-medium text-slate-800">
+            <span className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
               Email <span className="text-rose-500">*</span>
             </span>
             <input
@@ -670,14 +976,15 @@ function ContactPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="rounded-2xl border border-slate-300 bg-white px-5 py-4 text-lg text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              className="rounded-2xl border border-white/70 bg-white/80 px-5 py-4 text-lg text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              placeholder={language === "en" ? "name@example.com" : "tenban@example.com"}
             />
           </label>
         </div>
 
         <label className="grid gap-3">
-          <span className="text-xl font-medium text-slate-800">
-            Message <span className="text-rose-500">*</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+            {getLocalizedValue(uiText.message, language)} <span className="text-rose-500">*</span>
           </span>
           <textarea
             name="message"
@@ -686,17 +993,30 @@ function ContactPage() {
             onChange={handleChange}
             required
             minLength="10"
-            className="min-h-[220px] rounded-2xl border border-slate-300 bg-white px-5 py-4 text-lg text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            className="min-h-[240px] rounded-2xl border border-white/70 bg-white/80 px-5 py-4 text-lg text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
+            placeholder={
+              language === "en"
+                ? "Share a project idea, collaboration plan, or anything you'd like to discuss..."
+                : "Chia sẻ ý tưởng dự án, kế hoạch hợp tác, hoặc bất kỳ điều gì bạn muốn trao đổi..."
+            }
           />
         </label>
 
-        <button
-          type="submit"
-          disabled={status === "submitting"}
-          className="inline-flex w-fit items-center justify-center rounded-full bg-sky-600 px-8 py-4 text-base font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {status === "submitting" ? "Sending..." : "Send Message"}
-        </button>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm leading-7 text-slate-500">
+            {language === "en"
+              ? "I usually reply within 2 days."
+              : "Mình thường phản hồi trong vòng 2 ngày."}
+          </p>
+
+          <button
+            type="submit"
+            disabled={status === "submitting"}
+            className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-8 py-4 text-base font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-fit"
+          >
+            {status === "submitting" ? getLocalizedValue(uiText.sendingMessage, language) : getLocalizedValue(uiText.sendMessage, language)}
+          </button>
+        </div>
       </form>
     </section>
   );
@@ -706,7 +1026,7 @@ function SectionShell({ title, children }) {
   return (
     <section className="mx-auto max-w-5xl">
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-3xl font-light text-slate-800 sm:text-4xl">{title}</h2>
+        <h2 className="text-3xl font-semibold text-slate-800 sm:text-4xl">{title}</h2>
       </div>
       {children}
     </section>
@@ -716,7 +1036,7 @@ function SectionShell({ title, children }) {
 function ListPage({ title, description, items }) {
   return (
     <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-      <h1 className="text-4xl font-light text-slate-800">{title}</h1>
+      <h1 className="text-4xl font-semibold text-slate-800">{title}</h1>
       <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">{description}</p>
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {items.map((item) => (
@@ -729,14 +1049,14 @@ function ListPage({ title, description, items }) {
   );
 }
 
-function ArticleCard({ article }) {
+function ArticleCard({ article, language = "vi" }) {
   return (
     <article className="flex gap-7 rounded-xl border border-slate-200 bg-white p-5 shadow-lg max-sm:flex-col sm:gap-10 sm:rounded-2xl sm:p-10">
       <div className={`rounded-xl bg-gradient-to-br ${article.tone || "from-slate-200 to-slate-100"} p-4 shadow-lg sm:w-[240px] sm:shrink-0`}>
         <div className="flex h-full min-h-[190px] items-end rounded-xl border border-white/60 bg-white/55 p-4">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-sky-600">{article.category}</p>
-            <p className="mt-2 text-2xl font-light leading-tight text-slate-800">Notes</p>
+            <p className="mt-2 text-2xl font-light leading-tight text-slate-800">{getLocalizedValue(uiText.notes, language)}</p>
           </div>
         </div>
       </div>
@@ -758,7 +1078,7 @@ function ArticleCard({ article }) {
   );
 }
 
-function ProjectShowcaseCard({ project }) {
+function ProjectShowcaseCard({ project, language = "vi" }) {
   return (
     <article className="min-w-0">
       <Link to={`/projects/${project.slug}`} className="block transition-opacity duration-300 hover:opacity-60">
@@ -779,7 +1099,7 @@ function ProjectShowcaseCard({ project }) {
             ) : (
               <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-sky-600">Product Preview</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-sky-600">{getLocalizedValue(uiText.projectPreview, language)}</p>
                   <h3 className="mt-3 text-2xl font-light text-slate-800">{project.title}</h3>
                   <p className="mt-2 max-w-sm text-sm leading-6 text-slate-600">{project.summary}</p>
                 </div>
@@ -803,6 +1123,77 @@ function ProjectShowcaseCard({ project }) {
           </li>
         ))}
       </ul>
+    </article>
+  );
+}
+
+function ProjectListingCard({ project, reverse = false, language = "vi" }) {
+  return (
+    <article className={`flex flex-col items-center gap-8 md:gap-14 ${reverse ? "md:flex-row-reverse" : "md:flex-row"}`}>
+      <div className="w-full md:w-[58.75%] md:shrink-0">
+        <Link to={`/projects/${project.slug}`} className="block transition-opacity duration-300 hover:opacity-50">
+          <div className="ml-[-1px] w-[calc(100%+2px)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+            <div className="relative flex w-full items-center gap-3 border-b border-slate-200 bg-gray-50 px-[58px] py-3">
+              <div className="absolute left-4 top-1/2 flex -translate-y-1/2 gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+              </div>
+
+              <div className="flex-1 truncate text-center font-mono text-xs text-slate-400">
+                {project.demoLink ? formatProjectDomain(project.demoLink) : `${project.slug}.case-study`}
+              </div>
+            </div>
+
+            <div className="block w-full h-auto bg-white">
+              {project.image ? (
+                <img src={project.image} alt={project.title} className="block h-auto w-full object-cover object-top" />
+              ) : (
+                <div className="aspect-[4/3] bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-6">
+                  <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-sky-600">{getLocalizedValue(uiText.projectPreview, language)}</p>
+                      <h3 className="mt-3 text-2xl font-medium text-slate-800">{project.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{project.summary}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      <div className="w-full">
+        <div className="mb-2.5 sm:mb-4">
+          <h2 className="font-['Be_Vietnam_Pro'] text-3xl font-medium text-slate-900 md:text-4xl">
+            <Link to={`/projects/${project.slug}`} className="transition-opacity duration-300 hover:opacity-50">
+              {project.title}
+            </Link>
+          </h2>
+        </div>
+
+        <p className="mb-4 text-lg leading-8 text-slate-600 sm:mb-6 sm:text-xl">{project.summary}</p>
+
+        <ul className="flex flex-col gap-1.5 text-slate-500 sm:gap-2 sm:text-xl">
+          {(project.technologies || []).slice(0, 5).map((tech) => (
+            <li key={tech} className="flex items-center gap-1.5">
+              <CheckIcon className="h-5 w-5" />
+              {tech}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-6 sm:mt-8">
+          <Link
+            to={`/projects/${project.slug}`}
+            className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white transition hover:opacity-85"
+          >
+            {getLocalizedValue(uiText.viewDetails, language)}
+            <ArrowIcon className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
     </article>
   );
 }
@@ -846,11 +1237,11 @@ function ProjectGridCard({ project }) {
   );
 }
 
-function LinkCard({ href, label }) {
+function LinkCard({ href, label, language = "vi" }) {
   if (!href) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-400">
-        {label} chưa được cập nhật.
+        {label} {getLocalizedValue(uiText.noLinkYet, language)}
       </div>
     );
   }
@@ -1173,6 +1564,30 @@ function useAdminSession() {
   };
 }
 
+function splitParagraphs(value) {
+  if (!value) {
+    return [];
+  }
+
+  return String(value)
+    .split(/\r?\n+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function formatProjectDomain(value) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value);
+    return url.host.replace(/^www\./, "www.");
+  } catch {
+    return value;
+  }
+}
+
 function formatDisplayDate(value) {
   if (!value) {
     return "Unscheduled";
@@ -1183,6 +1598,22 @@ function formatDisplayDate(value) {
     month: "long",
     year: "numeric"
   });
+}
+
+function getLocalizedValue(value, language) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "object") {
+    return value[language] || value.vi || value.en || "";
+  }
+
+  return String(value);
 }
 
 export default App;

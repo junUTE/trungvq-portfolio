@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&family=Manrope:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,8 +6,8 @@
 
 :root {
   color: #334155;
-  background-color: #f8fafc;
-  font-family: "Jost", "Segoe UI", sans-serif;
+  background-color: #eef6ff;
+  font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
 }
 
 * {
@@ -22,8 +22,29 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f8fafc;
+  background-color: #eef6ff;
+  background-image:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.22), transparent 26%),
+    radial-gradient(circle at 85% 12%, rgba(56, 189, 248, 0.16), transparent 22%),
+    radial-gradient(circle at 78% 78%, rgba(125, 211, 252, 0.18), transparent 24%),
+    radial-gradient(circle at 18% 88%, rgba(186, 230, 253, 0.24), transparent 20%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 249, 255, 0.82) 42%, rgba(224, 242, 254, 0.92));
+  background-attachment: fixed;
   font-weight: 300;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  opacity: 0.22;
 }
 
 a {
@@ -44,4 +65,11 @@ textarea::placeholder {
 
 #root {
   min-height: 100vh;
+  position: relative;
+}
+
+.hero-intro-text {
+  font-family: "Manrope", "Be Vietnam Pro", "Segoe UI", sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.025em;
 }

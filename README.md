@@ -40,6 +40,7 @@ npm install
 - `JWT_SECRET`
 - `ADMIN_USERNAME`, `ADMIN_PASSWORD`
 - `EMAIL_USER`, `EMAIL_PASS`
+- Optional SMTP overrides: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_CONNECTION_TIMEOUT`, `SMTP_GREETING_TIMEOUT`, `SMTP_SOCKET_TIMEOUT`
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 
 3. Chạy frontend:
@@ -61,6 +62,7 @@ Frontend mặc định chạy ở `http://localhost:5173` và backend ở `http:
 - Frontend: đặt `VITE_API_URL=https://your-backend-domain/api`
 - Backend: đặt `FRONTEND_URL` hoặc `CORS_ALLOWED_ORIGINS` trỏ đúng domain frontend production
 - Gmail: dùng `App Password`, không dùng mật khẩu tài khoản chính
+- SMTP mặc định hiện dùng `smtp.gmail.com:465` với kết nối bảo mật; có thể override qua biến `SMTP_*` nếu cần debug hoặc đổi nhà cung cấp mail
 - Cloudinary: kiểm tra upload project/avatar trả về `url` và `publicId`
 - Test production flow:
   - Public project list và project detail tải được
