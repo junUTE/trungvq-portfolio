@@ -3,18 +3,22 @@ import { Link, useNavigate } from "react-router-dom";
 
 import {
   createAdminArticle,
+  createAdminCodeItem,
   createAdminProject,
   createAdminWorkItem,
   deleteAdminArticle,
+  deleteAdminCodeItem,
   deleteAdminProject,
   deleteAdminWorkItem,
   getAdminArticles,
+  getAdminCodeItems,
   extractErrorMessage,
   getAdminContacts,
   getAdminProfile,
   getAdminProjects,
   getAdminWorkItems,
   updateAdminArticle,
+  updateAdminCodeItem,
   updateAdminProfile,
   updateAdminAvatar,
   updateAdminContact,
@@ -24,11 +28,17 @@ import {
 } from "../services/portfolioApi";
 
 const emptyProjectForm = {
-  title: "",
+  titleVi: "",
+  titleEn: "",
   slug: "",
-  summary: "",
-  description: "",
-  content: "",
+  summaryVi: "",
+  summaryEn: "",
+  descriptionVi: "",
+  descriptionEn: "",
+  contentVi: "",
+  contentEn: "",
+  myRoleVi: "",
+  myRoleEn: "",
   technologies: "",
   githubLink: "",
   demoLink: "",
@@ -48,33 +58,44 @@ const emptyProfileForm = {
   displayName: "",
   brandInitials: "",
   headerAvatarUrl: "",
-  heroTitle: "",
+  heroTitleVi: "",
+  heroTitleEn: "",
   introSegmentsJson: JSON.stringify(
     [
-      { text: "Mình xây dựng web app với " },
-      { text: "React", tone: "text-sky-600" },
-      { text: ", " },
-      { text: "Tailwind CSS", tone: "text-cyan-600" },
-      { text: ", " },
-      { text: "Node.js", tone: "text-emerald-600" },
-      { text: " và " },
-      { text: "Express", tone: "text-violet-600" },
-      { text: ", tập trung vào trải nghiệm mượt, giao diện rõ ràng và luồng quản trị nội dung thật để sản phẩm có thể vận hành như một ứng dụng hoàn chỉnh." }
+      { text: { vi: "Mình xây dựng web app với ", en: "I build web apps with " } },
+      { text: { vi: "React", en: "React" }, tone: "text-sky-600" },
+      { text: { vi: ", ", en: ", " } },
+      { text: { vi: "Tailwind CSS", en: "Tailwind CSS" }, tone: "text-cyan-600" },
+      { text: { vi: ", ", en: ", " } },
+      { text: { vi: "Node.js", en: "Node.js" }, tone: "text-emerald-600" },
+      { text: { vi: " và ", en: " and " } },
+      { text: { vi: "Express", en: "Express" }, tone: "text-violet-600" },
+      {
+        text: {
+          vi: ", tập trung vào trải nghiệm mượt, giao diện rõ ràng và luồng quản trị nội dung thật để sản phẩm có thể vận hành như một ứng dụng hoàn chỉnh.",
+          en: ", with a focus on smooth UX, clear interfaces, and real content workflows so the product can operate like a complete application."
+        }
+      }
     ],
     null,
     2
   ),
-  goalDescription: "",
+  goalDescriptionVi: "",
+  goalDescriptionEn: "",
   githubUrl: "",
   linkedinUrl: ""
 };
 
 const emptyArticleForm = {
-  title: "",
+  titleVi: "",
+  titleEn: "",
   slug: "",
-  category: "",
-  readTime: "",
-  excerpt: "",
+  categoryVi: "",
+  categoryEn: "",
+  readTimeVi: "",
+  readTimeEn: "",
+  excerptVi: "",
+  excerptEn: "",
   tone: "from-slate-200 to-slate-100",
   publishedAt: "",
   status: "draft",
@@ -82,11 +103,27 @@ const emptyArticleForm = {
 };
 
 const emptyWorkForm = {
-  title: "",
-  company: "",
-  period: "",
-  summary: "",
-  highlights: "",
+  titleVi: "",
+  titleEn: "",
+  companyVi: "",
+  companyEn: "",
+  periodVi: "",
+  periodEn: "",
+  summaryVi: "",
+  summaryEn: "",
+  highlightsVi: "",
+  highlightsEn: "",
+  status: "draft",
+  order: 0
+};
+
+const emptyCodeForm = {
+  owner: "",
+  name: "",
+  summaryVi: "",
+  summaryEn: "",
+  repositoryUrl: "",
+  tags: "",
   status: "draft",
   order: 0
 };
@@ -97,11 +134,17 @@ function toProjectForm(project) {
   }
 
   return {
-    title: project.title || "",
+    titleVi: getLocalizedFormValue(project.title, "vi"),
+    titleEn: getLocalizedFormValue(project.title, "en"),
     slug: project.slug || "",
-    summary: project.summary || "",
-    description: project.description || "",
-    content: project.content || "",
+    summaryVi: getLocalizedFormValue(project.summary, "vi"),
+    summaryEn: getLocalizedFormValue(project.summary, "en"),
+    descriptionVi: getLocalizedFormValue(project.description, "vi"),
+    descriptionEn: getLocalizedFormValue(project.description, "en"),
+    contentVi: getLocalizedFormValue(project.content, "vi"),
+    contentEn: getLocalizedFormValue(project.content, "en"),
+    myRoleVi: getLocalizedFormValue(project.myRole, "vi"),
+    myRoleEn: getLocalizedFormValue(project.myRole, "en"),
     technologies: Array.isArray(project.technologies) ? project.technologies.join("\n") : "",
     githubLink: project.githubLink || "",
     demoLink: project.demoLink || "",
@@ -115,11 +158,22 @@ function toProjectForm(project) {
 
 function toProjectPayload(form) {
   return {
-    ...form,
+    title: toLocalizedPayload(form.titleVi, form.titleEn),
+    slug: form.slug,
+    summary: toLocalizedPayload(form.summaryVi, form.summaryEn),
+    description: toLocalizedPayload(form.descriptionVi, form.descriptionEn),
+    content: toLocalizedPayload(form.contentVi, form.contentEn),
+    myRole: toLocalizedPayload(form.myRoleVi, form.myRoleEn),
     technologies: form.technologies
       .split(/\r?\n|,/)
       .map((item) => item.trim())
       .filter(Boolean),
+    githubLink: form.githubLink,
+    demoLink: form.demoLink,
+    image: form.image,
+    imagePublicId: form.imagePublicId,
+    featured: form.featured,
+    status: form.status,
     order: Number(form.order) || 0
   };
 }
@@ -133,9 +187,11 @@ function toProfileForm(profile) {
     displayName: profile.displayName || "",
     brandInitials: profile.brandInitials || "",
     headerAvatarUrl: profile.headerAvatarUrl || "",
-    heroTitle: profile.heroTitle || "",
+    heroTitleVi: getLocalizedFormValue(profile.heroTitle, "vi"),
+    heroTitleEn: getLocalizedFormValue(profile.heroTitle, "en"),
     introSegmentsJson: JSON.stringify(profile.introSegments || [], null, 2),
-    goalDescription: profile.goalDescription || "",
+    goalDescriptionVi: getLocalizedFormValue(profile.goalDescription, "vi"),
+    goalDescriptionEn: getLocalizedFormValue(profile.goalDescription, "en"),
     githubUrl: profile.githubUrl || "",
     linkedinUrl: profile.linkedinUrl || ""
   };
@@ -155,11 +211,52 @@ function toProfilePayload(form) {
     displayName: form.displayName,
     brandInitials: form.brandInitials,
     headerAvatarUrl: form.headerAvatarUrl,
-    heroTitle: form.heroTitle,
+    heroTitle: toLocalizedPayload(form.heroTitleVi, form.heroTitleEn),
     introSegments,
-    goalDescription: form.goalDescription,
+    goalDescription: toLocalizedPayload(form.goalDescriptionVi, form.goalDescriptionEn),
     githubUrl: form.githubUrl,
     linkedinUrl: form.linkedinUrl
+  };
+}
+
+function toCodeForm(codeItem) {
+  if (!codeItem) {
+    return emptyCodeForm;
+  }
+
+  return {
+    owner: codeItem.owner || "",
+    name: codeItem.name || "",
+    summaryVi: getLocalizedFormValue(codeItem.summary, "vi"),
+    summaryEn: getLocalizedFormValue(codeItem.summary, "en"),
+    repositoryUrl: codeItem.repositoryUrl || "",
+    tags: Array.isArray(codeItem.tags) ? codeItem.tags.map((tag) => `${getLocalizedFormValue(tag.label, "vi")}|${getLocalizedFormValue(tag.label, "en")}|${tag.color || "bg-slate-500"}`).join("\n") : "",
+    status: codeItem.status || "draft",
+    order: Number.isFinite(codeItem.order) ? codeItem.order : 0
+  };
+}
+
+function toCodePayload(form) {
+  return {
+    owner: form.owner,
+    name: form.name,
+    summary: toLocalizedPayload(form.summaryVi, form.summaryEn),
+    repositoryUrl: form.repositoryUrl,
+    tags: form.tags
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => {
+        const [labelViPart, labelEnPart, colorPart] = item.split("|");
+
+        return {
+          label: toLocalizedPayload((labelViPart || "").trim(), (labelEnPart || "").trim()),
+          color: (colorPart || "bg-slate-500").trim() || "bg-slate-500"
+        };
+      })
+      .filter((tag) => tag.label.vi || tag.label.en),
+    status: form.status,
+    order: Number(form.order) || 0
   };
 }
 
@@ -186,10 +283,13 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
   const [profileForm, setProfileForm] = useState(emptyProfileForm);
   const [articles, setArticles] = useState([]);
   const [workItems, setWorkItems] = useState([]);
+  const [codeItems, setCodeItems] = useState([]);
   const [articleForm, setArticleForm] = useState(emptyArticleForm);
   const [workForm, setWorkForm] = useState(emptyWorkForm);
+  const [codeForm, setCodeForm] = useState(emptyCodeForm);
   const [selectedArticleId, setSelectedArticleId] = useState("");
   const [selectedWorkItemId, setSelectedWorkItemId] = useState("");
+  const [selectedCodeItemId, setSelectedCodeItemId] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -201,12 +301,13 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
       setError("");
 
       try {
-        const [projectsPayload, contactsPayload, profilePayload, articlesPayload, workPayload] = await Promise.all([
+        const [projectsPayload, contactsPayload, profilePayload, articlesPayload, workPayload, codePayload] = await Promise.all([
           getAdminProjects(),
           getAdminContacts(),
           getAdminProfile(),
           getAdminArticles(),
-          getAdminWorkItems()
+          getAdminWorkItems(),
+          getAdminCodeItems()
         ]);
 
         if (active) {
@@ -215,6 +316,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
           setProfileForm(toProfileForm(profilePayload.data));
           setArticles(articlesPayload.data || []);
           setWorkItems(workPayload.data || []);
+          setCodeItems(codePayload.data || []);
         }
       } catch (requestError) {
         if (active) {
@@ -246,10 +348,11 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
     () => [
       { label: "Authentication", value: "JWT active", helper: "Bearer token + server guard" },
       { label: "Projects", value: String(projects.length), helper: "Draft and published items" },
+      { label: "Code repos", value: String(codeItems.length), helper: "Public repositories and experiments" },
       { label: "Unread contacts", value: String(contacts.filter((item) => item.status !== "replied").length), helper: "Needs admin follow-up" },
       { label: "Last login", value: formatAdminDate(user?.lastLogin), helper: "Updated after successful login" }
     ],
-    [contacts, projects.length, user?.lastLogin]
+    [codeItems.length, contacts, projects.length, user?.lastLogin]
   );
 
   async function handleLogout() {
@@ -315,6 +418,15 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
     const { name, value } = event.target;
 
     setWorkForm((current) => ({
+      ...current,
+      [name]: value
+    }));
+  }
+
+  function handleCodeFieldChange(event) {
+    const { name, value } = event.target;
+
+    setCodeForm((current) => ({
       ...current,
       [name]: value
     }));
@@ -588,6 +700,55 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
     }
   }
 
+  async function handleCodeSubmit(event) {
+    event.preventDefault();
+    setContentFeedback("");
+
+    try {
+      const payload = selectedCodeItemId
+        ? await updateAdminCodeItem(selectedCodeItemId, toCodePayload(codeForm))
+        : await createAdminCodeItem(toCodePayload(codeForm));
+      const savedCodeItem = payload.data;
+
+      setCodeItems((current) => {
+        if (selectedCodeItemId) {
+          return current.map((item) => (item._id === savedCodeItem._id ? savedCodeItem : item)).sort(sortContentByOrderAndDate);
+        }
+
+        return [savedCodeItem, ...current].sort(sortContentByOrderAndDate);
+      });
+      setSelectedCodeItemId(savedCodeItem._id);
+      setCodeForm(toCodeForm(savedCodeItem));
+      setContentFeedback(payload.message || "Code item saved successfully.");
+    } catch (saveError) {
+      setContentFeedback(extractErrorMessage(saveError));
+    }
+  }
+
+  async function handleCodeDelete(codeItemId) {
+    const codeItem = codeItems.find((item) => item._id === codeItemId);
+
+    if (!codeItem || !window.confirm(`Delete code item "${codeItem.name}"?`)) {
+      return;
+    }
+
+    setContentFeedback("");
+
+    try {
+      const payload = await deleteAdminCodeItem(codeItemId);
+      setCodeItems((current) => current.filter((item) => item._id !== codeItemId));
+
+      if (selectedCodeItemId === codeItemId) {
+        setSelectedCodeItemId("");
+        setCodeForm(emptyCodeForm);
+      }
+
+      setContentFeedback(payload.message || "Code item deleted successfully.");
+    } catch (deleteError) {
+      setContentFeedback(extractErrorMessage(deleteError));
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-8 sm:py-10">
       <section className="mx-auto max-w-7xl">
@@ -692,46 +853,93 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
             </form>
 
             <form onSubmit={handleProjectSubmit} className="mt-6 grid gap-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Title" labelClassName="text-sm font-medium text-slate-700">
-                  <input
-                    name="title"
-                    value={projectForm.title}
-                    onChange={handleProjectFieldChange}
-                    required
-                    className={fieldClassName}
-                  />
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label="Title (VI)" labelClassName="text-sm font-medium text-slate-700">
+                  <input name="titleVi" value={projectForm.titleVi} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                </Field>
+                <Field label="Title (EN)" labelClassName="text-sm font-medium text-slate-700">
+                  <input name="titleEn" value={projectForm.titleEn} onChange={handleProjectFieldChange} required className={fieldClassName} />
                 </Field>
                 <Field label="Slug">
                   <input name="slug" value={projectForm.slug} onChange={handleProjectFieldChange} className={fieldClassName} />
                 </Field>
               </div>
 
-              <Field label="Summary">
-                <input name="summary" value={projectForm.summary} onChange={handleProjectFieldChange} required className={fieldClassName} />
-              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Summary (VI)">
+                  <textarea name="summaryVi" rows="3" value={projectForm.summaryVi} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                </Field>
+                <Field label="Summary (EN)">
+                  <textarea name="summaryEn" rows="3" value={projectForm.summaryEn} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                </Field>
+              </div>
 
-              <Field label="Description">
-                <textarea
-                  name="description"
-                  rows="3"
-                  value={projectForm.description}
-                  onChange={handleProjectFieldChange}
-                  required
-                  className={fieldClassName}
-                />
-              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Description (VI)">
+                  <textarea
+                    name="descriptionVi"
+                    rows="4"
+                    value={projectForm.descriptionVi}
+                    onChange={handleProjectFieldChange}
+                    required
+                    className={fieldClassName}
+                  />
+                </Field>
+                <Field label="Description (EN)">
+                  <textarea
+                    name="descriptionEn"
+                    rows="4"
+                    value={projectForm.descriptionEn}
+                    onChange={handleProjectFieldChange}
+                    required
+                    className={fieldClassName}
+                  />
+                </Field>
+              </div>
 
-              <Field label="Content">
-                <textarea
-                  name="content"
-                  rows="5"
-                  value={projectForm.content}
-                  onChange={handleProjectFieldChange}
-                  required
-                  className={fieldClassName}
-                />
-              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Content (VI)">
+                  <textarea
+                    name="contentVi"
+                    rows="6"
+                    value={projectForm.contentVi}
+                    onChange={handleProjectFieldChange}
+                    required
+                    className={fieldClassName}
+                  />
+                </Field>
+                <Field label="Content (EN)">
+                  <textarea
+                    name="contentEn"
+                    rows="6"
+                    value={projectForm.contentEn}
+                    onChange={handleProjectFieldChange}
+                    required
+                    className={fieldClassName}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="My role (VI)">
+                  <textarea
+                    name="myRoleVi"
+                    rows="4"
+                    value={projectForm.myRoleVi}
+                    onChange={handleProjectFieldChange}
+                    className={fieldClassName}
+                  />
+                </Field>
+                <Field label="My role (EN)">
+                  <textarea
+                    name="myRoleEn"
+                    rows="4"
+                    value={projectForm.myRoleEn}
+                    onChange={handleProjectFieldChange}
+                    className={fieldClassName}
+                  />
+                </Field>
+              </div>
 
               <Field label="Technologies (one per line)">
                 <textarea
@@ -856,11 +1064,11 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-xl font-medium text-slate-900">{project.title}</h3>
+                            <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(project.title, "vi")}</h3>
                             <StatusBadge value={project.status} />
                             {project.featured ? <StatusBadge value="featured" /> : null}
                           </div>
-                          <p className="mt-3 text-sm leading-6 text-slate-600">{project.summary}</p>
+                          <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(project.summary, "vi")}</p>
                           <p className="mt-3 text-xs uppercase tracking-[0.22em] text-slate-400">
                             {project.slug} · order {project.order || 0}
                           </p>
@@ -959,9 +1167,14 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                   <input name="brandInitials" value={profileForm.brandInitials} onChange={handleProfileFieldChange} className={lightFieldClassName} />
                 </Field>
               </div>
-              <Field label="Hero title" labelClassName="text-sm font-medium text-slate-700">
-                <input name="heroTitle" value={profileForm.heroTitle} onChange={handleProfileFieldChange} className={lightFieldClassName} />
-              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Hero title (VI)" labelClassName="text-sm font-medium text-slate-700">
+                  <input name="heroTitleVi" value={profileForm.heroTitleVi} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                </Field>
+                <Field label="Hero title (EN)" labelClassName="text-sm font-medium text-slate-700">
+                  <input name="heroTitleEn" value={profileForm.heroTitleEn} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                </Field>
+              </div>
               <Field label="Intro segments JSON" labelClassName="text-sm font-medium text-slate-700">
                 <textarea
                   name="introSegmentsJson"
@@ -971,15 +1184,26 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                   className={lightFieldClassName}
                 />
               </Field>
-              <Field label="Goal description" labelClassName="text-sm font-medium text-slate-700">
-                <textarea
-                  name="goalDescription"
-                  rows="4"
-                  value={profileForm.goalDescription}
-                  onChange={handleProfileFieldChange}
-                  className={lightFieldClassName}
-                />
-              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Goal description (VI)" labelClassName="text-sm font-medium text-slate-700">
+                  <textarea
+                    name="goalDescriptionVi"
+                    rows="4"
+                    value={profileForm.goalDescriptionVi}
+                    onChange={handleProfileFieldChange}
+                    className={lightFieldClassName}
+                  />
+                </Field>
+                <Field label="Goal description (EN)" labelClassName="text-sm font-medium text-slate-700">
+                  <textarea
+                    name="goalDescriptionEn"
+                    rows="4"
+                    value={profileForm.goalDescriptionEn}
+                    onChange={handleProfileFieldChange}
+                    className={lightFieldClassName}
+                  />
+                </Field>
+              </div>
               <Field label="GitHub URL" labelClassName="text-sm font-medium text-slate-700">
                 <input name="githubUrl" value={profileForm.githubUrl} onChange={handleProfileFieldChange} className={lightFieldClassName} />
               </Field>
@@ -1017,23 +1241,41 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                 </div>
 
                 <form onSubmit={handleArticleSubmit} className="mt-6 grid gap-4">
-                  <Field label="Title" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="title" value={articleForm.title} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                  </Field>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Title (VI)" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="titleVi" value={articleForm.titleVi} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                    <Field label="Title (EN)" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="titleEn" value={articleForm.titleEn} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                  </div>
                   <Field label="Slug" labelClassName="text-sm font-medium text-slate-700">
                     <input name="slug" value={articleForm.slug} onChange={handleArticleFieldChange} className={lightFieldClassName} />
                   </Field>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Category" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="category" value={articleForm.category} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    <Field label="Category (VI)" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="categoryVi" value={articleForm.categoryVi} onChange={handleArticleFieldChange} className={lightFieldClassName} />
                     </Field>
-                    <Field label="Read time" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="readTime" value={articleForm.readTime} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    <Field label="Category (EN)" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="categoryEn" value={articleForm.categoryEn} onChange={handleArticleFieldChange} className={lightFieldClassName} />
                     </Field>
                   </div>
-                  <Field label="Excerpt" labelClassName="text-sm font-medium text-slate-700">
-                    <textarea name="excerpt" rows="4" value={articleForm.excerpt} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                  </Field>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Read time (VI)" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="readTimeVi" value={articleForm.readTimeVi} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                    <Field label="Read time (EN)" labelClassName="text-sm font-medium text-slate-700">
+                      <input name="readTimeEn" value={articleForm.readTimeEn} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Excerpt (VI)" labelClassName="text-sm font-medium text-slate-700">
+                      <textarea name="excerptVi" rows="4" value={articleForm.excerptVi} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                    <Field label="Excerpt (EN)" labelClassName="text-sm font-medium text-slate-700">
+                      <textarea name="excerptEn" rows="4" value={articleForm.excerptEn} onChange={handleArticleFieldChange} className={lightFieldClassName} />
+                    </Field>
+                  </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Tone" labelClassName="text-sm font-medium text-slate-700">
                       <input name="tone" value={articleForm.tone} onChange={handleArticleFieldChange} className={lightFieldClassName} />
@@ -1071,11 +1313,11 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                   <article key={article._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h3 className="text-xl font-medium text-slate-900">{article.title}</h3>
+                        <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(article.title, "vi")}</h3>
                         <p className="mt-2 text-sm text-slate-500">
-                          {article.category} · {article.readTime}
+                          {getLocalizedFormValue(article.category, "vi")} · {getLocalizedFormValue(article.readTime, "vi")}
                         </p>
-                        <p className="mt-3 text-sm leading-6 text-slate-600">{article.excerpt}</p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(article.excerpt, "vi")}</p>
                       </div>
                       <StatusBadge value={article.status} />
                     </div>
@@ -1126,29 +1368,58 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
               </div>
 
               <form onSubmit={handleWorkSubmit} className="mt-6 grid gap-4">
-                <Field label="Title">
-                  <input name="title" value={workForm.title} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                </Field>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Company" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="company" value={workForm.company} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  <Field label="Title (VI)" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="titleVi" value={workForm.titleVi} onChange={handleWorkFieldChange} className={lightFieldClassName} />
                   </Field>
-                  <Field label="Period" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="period" value={workForm.period} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  <Field label="Title (EN)" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="titleEn" value={workForm.titleEn} onChange={handleWorkFieldChange} className={lightFieldClassName} />
                   </Field>
                 </div>
-                <Field label="Summary" labelClassName="text-sm font-medium text-slate-700">
-                  <textarea name="summary" rows="4" value={workForm.summary} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                </Field>
-                <Field label="Highlights (comma separated)" labelClassName="text-sm font-medium text-slate-700">
-                  <input
-                    name="highlights"
-                    value={workForm.highlights}
-                    onChange={handleWorkFieldChange}
-                    className={lightFieldClassName}
-                    placeholder="React, CRUD workflows, Dashboard UI"
-                  />
-                </Field>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Company (VI)" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="companyVi" value={workForm.companyVi} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Company (EN)" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="companyEn" value={workForm.companyEn} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Period (VI)" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="periodVi" value={workForm.periodVi} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Period (EN)" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="periodEn" value={workForm.periodEn} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Summary (VI)" labelClassName="text-sm font-medium text-slate-700">
+                    <textarea name="summaryVi" rows="4" value={workForm.summaryVi} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Summary (EN)" labelClassName="text-sm font-medium text-slate-700">
+                    <textarea name="summaryEn" rows="4" value={workForm.summaryEn} onChange={handleWorkFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Highlights (VI, one per line)" labelClassName="text-sm font-medium text-slate-700">
+                    <textarea
+                      name="highlightsVi"
+                      rows="5"
+                      value={workForm.highlightsVi}
+                      onChange={handleWorkFieldChange}
+                      className={lightFieldClassName}
+                    />
+                  </Field>
+                  <Field label="Highlights (EN, one per line)" labelClassName="text-sm font-medium text-slate-700">
+                    <textarea
+                      name="highlightsEn"
+                      rows="5"
+                      value={workForm.highlightsEn}
+                      onChange={handleWorkFieldChange}
+                      className={lightFieldClassName}
+                    />
+                  </Field>
+                </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="Status" labelClassName="text-sm font-medium text-slate-700">
                     <select name="status" value={workForm.status} onChange={handleWorkFieldChange} className={lightFieldClassName}>
@@ -1174,16 +1445,18 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                 <article key={item._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="text-xl font-medium text-slate-900">{item.title}</h3>
-                      <p className="mt-2 text-sm text-slate-500">{[item.company, item.period].filter(Boolean).join(" · ")}</p>
-                      <p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p>
+                      <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(item.title, "vi")}</h3>
+                      <p className="mt-2 text-sm text-slate-500">
+                        {[getLocalizedFormValue(item.company, "vi"), getLocalizedFormValue(item.period, "vi")].filter(Boolean).join(" · ")}
+                      </p>
+                      <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(item.summary, "vi")}</p>
                     </div>
                     <StatusBadge value={item.status} />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {(item.highlights || []).map((highlight) => (
                       <span key={highlight} className="rounded-full bg-white px-3 py-1 text-xs text-slate-500 ring-1 ring-slate-200">
-                        {highlight}
+                        {getLocalizedFormValue(highlight, "vi")}
                       </span>
                     ))}
                   </div>
@@ -1201,6 +1474,135 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                     <button
                       type="button"
                       onClick={() => handleWorkDelete(item._id)}
+                      className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
+          <div className="grid gap-6 xl:grid-cols-2">
+            <div>
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Code</p>
+                  <h2 className="mt-3 text-3xl font-light text-slate-900">Manage code repositories</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCodeItemId("");
+                    setCodeForm(emptyCodeForm);
+                  }}
+                  className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
+                >
+                  New code item
+                </button>
+              </div>
+
+              <form onSubmit={handleCodeSubmit} className="mt-6 grid gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Owner" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="owner" value={codeForm.owner} onChange={handleCodeFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Repository name" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="name" value={codeForm.name} onChange={handleCodeFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Summary (VI)" labelClassName="text-sm font-medium text-slate-700">
+                    <textarea name="summaryVi" rows="4" value={codeForm.summaryVi} onChange={handleCodeFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Summary (EN)" labelClassName="text-sm font-medium text-slate-700">
+                    <textarea name="summaryEn" rows="4" value={codeForm.summaryEn} onChange={handleCodeFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <Field label="Repository URL" labelClassName="text-sm font-medium text-slate-700">
+                  <input
+                    name="repositoryUrl"
+                    value={codeForm.repositoryUrl}
+                    onChange={handleCodeFieldChange}
+                    className={lightFieldClassName}
+                    placeholder="https://github.com/username/repository"
+                  />
+                </Field>
+                <Field label="Tags (one per line: vi|en|bg-color)" labelClassName="text-sm font-medium text-slate-700">
+                  <textarea
+                    name="tags"
+                    rows="6"
+                    value={codeForm.tags}
+                    onChange={handleCodeFieldChange}
+                    className={lightFieldClassName}
+                    placeholder={"React|React|bg-sky-500\nNút UI|UI Button|bg-emerald-500"}
+                  />
+                </Field>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Status" labelClassName="text-sm font-medium text-slate-700">
+                    <select name="status" value={codeForm.status} onChange={handleCodeFieldChange} className={lightFieldClassName}>
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </Field>
+                  <Field label="Order" labelClassName="text-sm font-medium text-slate-700">
+                    <input name="order" type="number" value={codeForm.order} onChange={handleCodeFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <button
+                  type="submit"
+                  className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
+                >
+                  {selectedCodeItemId ? "Update code item" : "Create code item"}
+                </button>
+              </form>
+            </div>
+
+            <div className="space-y-4">
+              {[...codeItems].sort(sortContentByOrderAndDate).map((item) => (
+                <article key={item._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-xl font-medium text-slate-900">
+                        {item.owner}/{item.name}
+                      </h3>
+                      <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(item.summary, "vi")}</p>
+                      <a
+                        href={item.repositoryUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex text-sm font-medium text-sky-600 transition hover:opacity-70"
+                      >
+                        {item.repositoryUrl}
+                      </a>
+                    </div>
+                    <StatusBadge value={item.status} />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {(item.tags || []).map((tag) => (
+                      <span key={`${item._id}-${getLocalizedFormValue(tag.label, "vi")}`} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200">
+                        <span className={`h-2.5 w-2.5 rounded-full ${tag.color || "bg-slate-500"}`}></span>
+                        {getLocalizedFormValue(tag.label, "vi")}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCodeItemId(item._id);
+                        setCodeForm(toCodeForm(item));
+                      }}
+                      className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCodeDelete(item._id)}
                       className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
                     >
                       Delete
@@ -1289,11 +1691,15 @@ function toArticleForm(article) {
   }
 
   return {
-    title: article.title || "",
+    titleVi: getLocalizedFormValue(article.title, "vi"),
+    titleEn: getLocalizedFormValue(article.title, "en"),
     slug: article.slug || "",
-    category: article.category || "",
-    readTime: article.readTime || "",
-    excerpt: article.excerpt || "",
+    categoryVi: getLocalizedFormValue(article.category, "vi"),
+    categoryEn: getLocalizedFormValue(article.category, "en"),
+    readTimeVi: getLocalizedFormValue(article.readTime, "vi"),
+    readTimeEn: getLocalizedFormValue(article.readTime, "en"),
+    excerptVi: getLocalizedFormValue(article.excerpt, "vi"),
+    excerptEn: getLocalizedFormValue(article.excerpt, "en"),
     tone: article.tone || "from-slate-200 to-slate-100",
     publishedAt: article.publishedAt ? new Date(article.publishedAt).toISOString().slice(0, 10) : "",
     status: article.status || "draft",
@@ -1303,7 +1709,14 @@ function toArticleForm(article) {
 
 function toArticlePayload(form) {
   return {
-    ...form,
+    title: toLocalizedPayload(form.titleVi, form.titleEn),
+    slug: form.slug,
+    category: toLocalizedPayload(form.categoryVi, form.categoryEn),
+    readTime: toLocalizedPayload(form.readTimeVi, form.readTimeEn),
+    excerpt: toLocalizedPayload(form.excerptVi, form.excerptEn),
+    tone: form.tone,
+    publishedAt: form.publishedAt,
+    status: form.status,
     order: Number(form.order) || 0
   };
 }
@@ -1314,25 +1727,64 @@ function toWorkForm(workItem) {
   }
 
   return {
-    title: workItem.title || "",
-    company: workItem.company || "",
-    period: workItem.period || "",
-    summary: workItem.summary || "",
-    highlights: Array.isArray(workItem.highlights) ? workItem.highlights.join(", ") : "",
+    titleVi: getLocalizedFormValue(workItem.title, "vi"),
+    titleEn: getLocalizedFormValue(workItem.title, "en"),
+    companyVi: getLocalizedFormValue(workItem.company, "vi"),
+    companyEn: getLocalizedFormValue(workItem.company, "en"),
+    periodVi: getLocalizedFormValue(workItem.period, "vi"),
+    periodEn: getLocalizedFormValue(workItem.period, "en"),
+    summaryVi: getLocalizedFormValue(workItem.summary, "vi"),
+    summaryEn: getLocalizedFormValue(workItem.summary, "en"),
+    highlightsVi: Array.isArray(workItem.highlights) ? workItem.highlights.map((item) => getLocalizedFormValue(item, "vi")).join("\n") : "",
+    highlightsEn: Array.isArray(workItem.highlights) ? workItem.highlights.map((item) => getLocalizedFormValue(item, "en")).join("\n") : "",
     status: workItem.status || "draft",
     order: Number.isFinite(workItem.order) ? workItem.order : 0
   };
 }
 
 function toWorkPayload(form) {
+  const highlightViItems = form.highlightsVi
+    .split(/\r?\n/)
+    .map((item) => item.trim());
+  const highlightEnItems = form.highlightsEn
+    .split(/\r?\n/)
+    .map((item) => item.trim());
+  const highlightCount = Math.max(highlightViItems.length, highlightEnItems.length);
+
   return {
-    ...form,
-    highlights: form.highlights
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
+    title: toLocalizedPayload(form.titleVi, form.titleEn),
+    company: toLocalizedPayload(form.companyVi, form.companyEn),
+    period: toLocalizedPayload(form.periodVi, form.periodEn),
+    summary: toLocalizedPayload(form.summaryVi, form.summaryEn),
+    highlights: Array.from({ length: highlightCount }, (_, index) =>
+      toLocalizedPayload(highlightViItems[index] || "", highlightEnItems[index] || "")
+    ).filter((item) => item.vi || item.en),
+    status: form.status,
     order: Number(form.order) || 0
   };
+}
+
+function toLocalizedPayload(vi, en) {
+  return {
+    vi: typeof vi === "string" ? vi.trim() : "",
+    en: typeof en === "string" ? en.trim() : ""
+  };
+}
+
+function getLocalizedFormValue(value, language = "vi") {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "object") {
+    return value[language] || value.vi || value.en || "";
+  }
+
+  return String(value);
 }
 
 function sortContentByOrderAndDate(left, right) {

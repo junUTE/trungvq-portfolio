@@ -3,16 +3,19 @@ import dotenv from "dotenv";
 
 import { connectToDatabase } from "../config/database.js";
 import Article from "../models/article.model.js";
+import Code from "../models/code.model.js";
 import Profile from "../models/profile.model.js";
 import Project from "../models/project.model.js";
 import User from "../models/user.model.js";
 import Work from "../models/work.model.js";
 import seedArticles from "../data/seed-articles.js";
+import seedCode from "../data/seed-code.js";
 import seedProfile from "../data/seed-profile.js";
 import seedProjects from "../data/seed-projects.js";
 import seedWork from "../data/seed-work.js";
 import {
   validateArticlePayload,
+  validateCodePayload,
   validateProfilePayload,
   validateProjectPayload,
   validateWorkPayload
@@ -47,6 +50,14 @@ async function seed() {
     }
   }
 
+  for (const codeItem of seedCode) {
+    const errors = validateCodePayload(codeItem);
+
+    if (errors.length > 0) {
+      throw new Error(`Seed code "${codeItem.name}" is invalid: ${errors.join(", ")}`);
+    }
+  }
+
   for (const workItem of seedWork) {
     const errors = validateWorkPayload(workItem);
 
@@ -57,10 +68,12 @@ async function seed() {
 
   await Project.deleteMany({});
   await Article.deleteMany({});
+  await Code.deleteMany({});
   await Work.deleteMany({});
   await Profile.deleteMany({});
   await Project.insertMany(seedProjects);
   await Article.insertMany(seedArticles);
+  await Code.insertMany(seedCode);
   await Work.insertMany(seedWork);
   await Profile.create(seedProfile);
 
@@ -76,7 +89,7 @@ async function seed() {
   });
 
   console.log(
-    `Seeded profile, ${seedProjects.length} projects, ${seedArticles.length} articles, ${seedWork.length} work items and admin "${adminUsername}".`
+    `Seeded profile, ${seedProjects.length} projects, ${seedCode.length} code items, ${seedArticles.length} articles, ${seedWork.length} work items and admin "${adminUsername}".`
   );
 }
 

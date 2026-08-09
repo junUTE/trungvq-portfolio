@@ -3,28 +3,29 @@ import mongoose from "mongoose";
 const workSchema = new mongoose.Schema(
   {
     title: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       required: true,
-      trim: true,
-      minlength: 3
+      validate: {
+        validator(value) {
+          return typeof value === "string" || (value && typeof value === "object");
+        },
+        message: "Title must be a string or localized object."
+      }
     },
     company: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.Mixed,
       default: ""
     },
     period: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.Mixed,
       default: ""
     },
     summary: {
-      type: String,
-      required: true,
-      trim: true
+      type: mongoose.Schema.Types.Mixed,
+      required: true
     },
     highlights: {
-      type: [String],
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
       validate: {
         validator(value) {

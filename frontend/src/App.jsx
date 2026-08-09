@@ -8,6 +8,7 @@ import {
   createContact,
   extractErrorMessage,
   getArticles,
+  getCodeItems,
   getCurrentAdmin,
   getProfile,
   getStoredAuthToken,
@@ -18,37 +19,6 @@ import {
   logoutAdmin,
   setAuthToken
 } from "./services/portfolioApi";
-
-const codeRepos = [
-  {
-    owner: "trungvq",
-    name: "portfolio-cms-starter",
-    summary: "Starter monorepo cho portfolio full-stack với React, Express và MongoDB.",
-    tags: [
-      { label: "React", color: "bg-sky-500" },
-      { label: "Node.js", color: "bg-emerald-500" },
-      { label: "MongoDB", color: "bg-green-600" }
-    ]
-  },
-  {
-    owner: "trungvq",
-    name: "dashboard-ui-kit",
-    summary: "Bộ component cho dashboard nội bộ với focus vào readability và responsive layout.",
-    tags: [
-      { label: "Tailwind", color: "bg-cyan-500" },
-      { label: "UI", color: "bg-violet-500" }
-    ]
-  },
-  {
-    owner: "trungvq",
-    name: "contact-automation-api",
-    summary: "API xử lý contact form, trạng thái phản hồi và luồng gửi email cho admin.",
-    tags: [
-      { label: "Express", color: "bg-slate-600" },
-      { label: "JWT", color: "bg-amber-500" }
-    ]
-  }
-];
 
 const uiText = {
   homeSocialLead: {
@@ -62,6 +32,14 @@ const uiText = {
   code: {
     vi: "Code",
     en: "Code"
+  },
+  codeIntroLoading: {
+    vi: "Đang tải repository...",
+    en: "Loading repositories..."
+  },
+  codeEmpty: {
+    vi: "Chưa có repository nào được publish.",
+    en: "No published repositories yet."
   },
   projects: {
     vi: "Dự án",
@@ -194,6 +172,18 @@ const uiText = {
   nextStep: {
     vi: "Bước tiếp theo",
     en: "Next Step"
+  },
+  myRoleLabel: {
+    vi: "Vai trò",
+    en: "My Role"
+  },
+  myRoleHeading: {
+    vi: "Mình phụ trách phần nào",
+    en: "What I was responsible for"
+  },
+  myRoleEmpty: {
+    vi: "Vai trò cụ thể chưa được cập nhật cho dự án này.",
+    en: "A detailed role description has not been added for this project yet."
   },
   exploreLiveProject: {
     vi: "Khám phá dự án thực tế",
@@ -481,6 +471,7 @@ function AdminStatusScreen({ title, message }) {
 }
 
 function HomePage({ profileState, language }) {
+  const { codeItems, loading: loadingCodeItems, error: codeItemsError } = useCodeItems();
   const { projects, loading, error } = useProjects();
   const {
     profile,
@@ -527,44 +518,55 @@ function HomePage({ profileState, language }) {
       </section>
 
       <SectionShell title={getLocalizedValue(uiText.code, language)}>
-        <div className="grid grid-cols-1 gap-4 md:gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {codeRepos.map((repo) => (
-            <article
-              key={repo.name}
-              className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white shadow-lg transition duration-300 hover:scale-[1.03] hover:opacity-80"
-            >
-              <div className="p-4">
-                <div className="flex gap-2">
-                  <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
-                    GH
+        {loadingCodeItems ? <InfoCard message={getLocalizedValue(uiText.codeIntroLoading, language)} /> : null}
+        {codeItemsError ? <InfoCard tone="error" message={codeItemsError} /> : null}
+        {!loadingCodeItems && !codeItemsError ? (
+          codeItems.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:gap-7 sm:grid-cols-2 lg:grid-cols-3">
+              {codeItems.map((repo) => (
+                <a
+                  key={repo._id || `${repo.owner}-${repo.name}`}
+                  href={repo.repositoryUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white shadow-lg transition duration-300 hover:scale-[1.03] hover:opacity-80"
+                >
+                  <div className="p-4">
+                    <div className="flex gap-2">
+                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
+                        GH
+                      </div>
+
+                      <p className="self-center break-words text-sm font-medium text-slate-800">
+                        {repo.owner}
+                        <span className="font-normal text-slate-400"> / </span>
+                        {repo.name}
+                      </p>
+                    </div>
+
+                    <p className="mt-4 text-sm leading-6 text-slate-600">{getLocalizedValue(repo.summary, language)}</p>
+
+                    <p className="mt-3 inline-flex items-center text-sm text-sky-600">
+                      {getLocalizedValue(uiText.viewRepo, language)}
+                      <ArrowIcon className="ml-1 h-4 w-4" />
+                    </p>
                   </div>
 
-                  <p className="self-center break-words text-sm font-medium text-slate-800">
-                    {repo.owner}
-                    <span className="font-normal text-slate-400"> / </span>
-                    {repo.name}
-                  </p>
-                </div>
-
-                <p className="mt-4 text-sm leading-6 text-slate-600">{repo.summary}</p>
-
-                <p className="mt-3 inline-flex items-center text-sm text-sky-600">
-                  {getLocalizedValue(uiText.viewRepo, language)}
-                  <ArrowIcon className="ml-1 h-4 w-4" />
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-5 py-3.5">
-                {repo.tags.map((tag) => (
-                  <p key={tag.label} className="flex items-center gap-1.5 text-xs leading-none">
-                    <span className={`inline-block h-3 w-3 rounded-full ${tag.color}`}></span>
-                    {tag.label}
-                  </p>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
+                  <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-5 py-3.5">
+                    {(repo.tags || []).map((tag) => (
+                      <p key={`${repo.name}-${getLocalizedValue(tag.label, language)}`} className="flex items-center gap-1.5 text-xs leading-none">
+                        <span className={`inline-block h-3 w-3 rounded-full ${tag.color || "bg-slate-500"}`}></span>
+                        {getLocalizedValue(tag.label, language)}
+                      </p>
+                    ))}
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <InfoCard message={getLocalizedValue(uiText.codeEmpty, language)} />
+          )
+        ) : null}
       </SectionShell>
 
       <SectionShell title={getLocalizedValue(uiText.projects, language)}>
@@ -606,41 +608,23 @@ function WorkPage({ language }) {
   const { workItems, loading, error } = useWorkItems();
 
   return (
-    <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-      <h1 className="text-4xl font-semibold text-slate-800">{getLocalizedValue(uiText.work, language)}</h1>
-      <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-        {getLocalizedValue(uiText.workIntro, language)}
-      </p>
+    <section className="mx-auto max-w-7xl">
+      <div className="mx-auto mb-14 max-w-5xl xl:mb-20">
+        <h1 className="font-['Be_Vietnam_Pro'] text-4xl font-medium text-slate-900 sm:text-5xl">{getLocalizedValue(uiText.work, language)}</h1>
+        <p className="mt-5 max-w-3xl text-xl leading-relaxed text-slate-700 sm:text-2xl">{getLocalizedValue(uiText.workIntro, language)}</p>
+      </div>
 
-      {loading ? <InfoCard className="mt-8" message={getLocalizedValue(uiText.workLoading, language)} /> : null}
-      {error ? <InfoCard className="mt-8" tone="error" message={error} /> : null}
+      {loading ? <InfoCard className="mx-auto mt-8 max-w-5xl" message={getLocalizedValue(uiText.workLoading, language)} /> : null}
+      {error ? <InfoCard className="mx-auto mt-8 max-w-5xl" tone="error" message={error} /> : null}
       {!loading && !error ? (
         workItems.length > 0 ? (
-          <div className="mt-8 grid gap-4">
-            {workItems.map((item) => (
-              <article key={item._id} className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h2 className="text-2xl font-light text-slate-800">{item.title}</h2>
-                    <p className="mt-2 text-sm uppercase tracking-[0.2em] text-slate-400">
-                      {[item.company, item.period].filter(Boolean).join(" · ")}
-                    </p>
-                  </div>
-                  <StatusPill value={item.status} />
-                </div>
-                <p className="mt-4 text-base leading-7 text-slate-600">{item.summary}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {(item.highlights || []).map((highlight) => (
-                    <span key={highlight} className="rounded-full bg-white px-3 py-1 text-sm text-slate-500 ring-1 ring-slate-200">
-                      {highlight}
-                    </span>
-                  ))}
-                </div>
-              </article>
+          <div className="mx-auto mt-14 max-w-7xl space-y-14 xl:mt-20 xl:space-y-20">
+            {workItems.map((item, index) => (
+              <WorkListingCard key={item._id} item={item} reverse={index % 2 === 1} language={language} />
             ))}
           </div>
         ) : (
-          <InfoCard className="mt-8" message={getLocalizedValue(uiText.workEmpty, language)} />
+          <InfoCard className="mx-auto mt-8 max-w-5xl" message={getLocalizedValue(uiText.workEmpty, language)} />
         )
       ) : null}
     </section>
@@ -651,23 +635,23 @@ function ArticlesPage({ language }) {
   const { articles, loading, error } = useArticles();
 
   return (
-    <section className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-      <h1 className="text-4xl font-semibold text-slate-800">{getLocalizedValue(uiText.articles, language)}</h1>
-      <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-        {getLocalizedValue(uiText.articlesIntro, language)}
-      </p>
+    <section className="mx-auto max-w-7xl">
+      <div className="mx-auto mb-14 max-w-5xl xl:mb-20">
+        <h1 className="font-['Be_Vietnam_Pro'] text-4xl font-medium text-slate-900 sm:text-5xl">{getLocalizedValue(uiText.articles, language)}</h1>
+        <p className="mt-5 max-w-3xl text-xl leading-relaxed text-slate-700 sm:text-2xl">{getLocalizedValue(uiText.articlesIntro, language)}</p>
+      </div>
 
-      {loading ? <InfoCard className="mt-8" message={getLocalizedValue(uiText.articlesLoading, language)} /> : null}
-      {error ? <InfoCard className="mt-8" tone="error" message={error} /> : null}
+      {loading ? <InfoCard className="mx-auto mt-8 max-w-5xl" message={getLocalizedValue(uiText.articlesLoading, language)} /> : null}
+      {error ? <InfoCard className="mx-auto mt-8 max-w-5xl" tone="error" message={error} /> : null}
       {!loading && !error ? (
         articles.length > 0 ? (
-          <div className="mt-8 space-y-6 sm:space-y-8">
+          <div className="mx-auto mt-14 max-w-5xl space-y-10 xl:mt-20 xl:space-y-14">
             {articles.map((article) => (
               <ArticleCard key={article._id || article.slug} article={article} language={language} />
             ))}
           </div>
         ) : (
-          <InfoCard className="mt-8" message={getLocalizedValue(uiText.articlesEmpty, language)} />
+          <InfoCard className="mx-auto mt-8 max-w-5xl" message={getLocalizedValue(uiText.articlesEmpty, language)} />
         )
       ) : null}
     </section>
@@ -746,153 +730,163 @@ function ProjectDetailPage({ language }) {
     };
   }, [slug]);
 
+  const localizedTitle = getLocalizedValue(project?.title, language);
+  const localizedSummary = getLocalizedValue(project?.summary, language);
+  const localizedDescription = getLocalizedValue(project?.description, language);
+  const localizedContent = getLocalizedValue(project?.content, language);
+  const localizedMyRole = getLocalizedValue(project?.myRole, language);
+  const descriptionParagraphs = splitParagraphs(localizedDescription);
+  const contentParagraphs = splitParagraphs(localizedContent);
+  const detailSections = contentParagraphs.map((paragraph, index) => ({
+    eyebrow:
+      index === 0
+        ? language === "en"
+          ? "Build Notes"
+          : "Ghi chú xây dựng"
+        : language === "en"
+          ? `Detail ${index + 1}`
+          : `Chi tiết ${index + 1}`,
+    title:
+      index === 0
+        ? language === "en"
+          ? "How it came together"
+          : "Dự án được triển khai như thế nào"
+        : language === "en"
+          ? "More context"
+          : "Thông tin thêm",
+    body: paragraph
+  }));
+
   return (
-    <section className="mx-auto max-w-5xl">
+    <section className="mx-auto max-w-7xl">
       {loading ? <InfoCard className="mb-6" message={language === "en" ? "Loading project details..." : "Đang tải chi tiết dự án..."} /> : null}
       {error ? <InfoCard className="mb-6" tone="error" message={error} /> : null}
       {!loading && !error && project ? (
-        <div className="space-y-10 sm:space-y-14">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-            <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:items-start">
-              <div>
-                <Link
-                  to="/projects"
-                  className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.22em] text-sky-600 transition hover:opacity-70"
-                >
-                  <ArrowLeftIcon className="h-4 w-4" />
-                  {getLocalizedValue(uiText.backToProjects, language)}
-                </Link>
+        <div className="space-y-8 sm:space-y-14">
+          <div className="mx-auto max-w-5xl">
+            <Link
+              to="/projects"
+              className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.22em] text-sky-600 transition hover:opacity-70"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              {getLocalizedValue(uiText.backToProjects, language)}
+            </Link>
+          </div>
 
-                <h1 className="mt-6 font-['Be_Vietnam_Pro'] text-4xl font-medium leading-tight text-slate-900 sm:text-5xl">
-                  {project.title}
-                </h1>
-                <p className="mt-5 max-w-3xl text-xl leading-relaxed text-slate-700">{project.summary}</p>
-                <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">{project.description}</p>
+          <div className="mx-auto max-w-3xl text-center">
+            <h1 className="mt-6 font-['Be_Vietnam_Pro'] text-4xl font-medium leading-tight text-slate-900 sm:text-5xl">
+              {localizedTitle}
+            </h1>
 
-                <div className="mt-8 flex flex-wrap gap-3">
-                  {(project.technologies || []).map((tech) => (
-                    <span
-                      key={tech}
-                      className="rounded-full border border-slate-200 bg-sky-50/80 px-4 py-2 text-sm font-medium text-slate-700"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
+            <p className="mt-4 text-lg leading-8 text-slate-700 sm:text-xl">{localizedSummary}</p>
 
-                <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                  <LinkCard href={project.demoLink} label={getLocalizedValue(uiText.visitSite, language)} language={language} />
-                  <LinkCard href={project.githubLink} label={getLocalizedValue(uiText.githubRepository, language)} language={language} />
-                </div>
+            {(project.technologies || []).length > 0 ? (
+              <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-slate-500 sm:text-base">
+                {(project.technologies || []).map((tech) => (
+                  <li key={tech} className="flex items-center gap-1.5">
+                    <CheckIcon className="h-5 w-5" />
+                    {tech}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+
+          <div className="w-[calc(100%+2px)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+            <div className="relative flex w-full items-center gap-3 border-b border-slate-200 bg-gray-50 px-[58px] py-3">
+              <div className="absolute left-4 top-1/2 flex -translate-y-1/2 gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
               </div>
 
-              <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-[0px_8px_24px_rgba(0,0,0,0.05)] sm:p-5">
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
-                  <div className="relative flex w-full items-center gap-3 border-b border-slate-200 bg-gray-50 px-[58px] py-3">
-                    <div className="absolute left-4 top-1/2 flex -translate-y-1/2 gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
-                      <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
-                      <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
-                    </div>
+              <div className="flex-1 truncate text-center font-mono text-xs text-slate-400">
+                {project.demoLink ? (
+                  <a href={project.demoLink} target="_blank" rel="noreferrer" className="underline decoration-transparent transition hover:decoration-inherit">
+                    {formatProjectDomain(project.demoLink)}
+                  </a>
+                ) : (
+                  `${project.slug || "preview"}.case-study`
+                )}
+              </div>
+            </div>
 
-                    <div className="flex-1 truncate text-center font-mono text-xs text-slate-400">
-                      {project.slug || "preview"}.case-study
+            <div className="block w-full bg-white">
+              {project.image ? (
+                <img src={project.image} alt={localizedTitle} className="block h-auto w-full object-cover object-top" />
+              ) : (
+                <div className="aspect-[16/9] bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-6 sm:p-8">
+                  <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-lg backdrop-blur">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-sky-600">{getLocalizedValue(uiText.projectPreview, language)}</p>
+                      <h2 className="mt-3 text-3xl font-medium text-slate-900">{localizedTitle}</h2>
+                      <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">{localizedSummary}</p>
                     </div>
                   </div>
-
-                  <div className="aspect-video w-full bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-4 sm:p-6">
-                    {project.image ? (
-                      <img
-                        src={project.image}
-                        alt={project.title}
-                        className="h-full w-full rounded-2xl border border-slate-200/80 object-cover object-top shadow-lg"
-                      />
-                    ) : (
-                      <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.22em] text-sky-600">{getLocalizedValue(uiText.projectPreview, language)}</p>
-                          <h2 className="mt-3 text-2xl font-medium text-slate-800">{project.title}</h2>
-                          <p className="mt-2 text-sm leading-6 text-slate-600">{project.summary}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
+              )}
+            </div>
+          </div>
 
-                <div className="mt-5 rounded-2xl bg-slate-50 px-5 py-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{getLocalizedValue(uiText.quickSnapshot, language)}</p>
-                  <p className="mt-3 text-base leading-7 text-slate-600">
-                    {project.featured
-                      ? getLocalizedValue(uiText.featuredProjectNote, language)
-                      : getLocalizedValue(uiText.publishedProjectNote, language)}
-                  </p>
-                </div>
+          <div className="mx-auto max-w-3xl">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+              <div className="space-y-5 text-lg leading-8 text-slate-600">
+                {descriptionParagraphs.length > 0 ? descriptionParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>) : <p>{localizedSummary}</p>}
               </div>
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-5">
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl md:col-span-3 sm:p-10">
-              <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.overview, language)}</p>
-              <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
-                {getLocalizedValue(uiText.whatThisProjectDoes, language)}
-              </h2>
-              <div className="mt-6 space-y-5 text-lg leading-8 text-slate-600">
-                {splitParagraphs(project.description).map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-            </section>
+          {detailSections.length > 0 ? (
+            <div className="mx-auto max-w-3xl space-y-8 sm:space-y-12">
+              {detailSections.map((section, index) => (
+                <section key={`${section.eyebrow}-${index}`} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+                  <p className="text-xs font-normal uppercase tracking-[0.24em] text-sky-600 sm:text-sm">{section.eyebrow}</p>
+                  <h2 className="mt-3 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">{section.title}</h2>
+                  <p className="mt-5 text-lg leading-8 text-slate-600">{section.body}</p>
+                </section>
+              ))}
+            </div>
+          ) : null}
 
-            <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl md:col-span-2 sm:p-10">
-              <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.techStack, language)}</p>
-              <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900">{getLocalizedValue(uiText.builtWith, language)}</h2>
-              <div className="mt-6 flex flex-wrap gap-3">
-                {(project.technologies || []).map((tech) => (
-                  <span
-                    key={tech}
-                    className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-200"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-8 space-y-3 rounded-2xl bg-slate-50 p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{getLocalizedValue(uiText.links, language)}</p>
-                <ExternalLink href={project.demoLink} label={getLocalizedValue(uiText.visitSite, language)} />
-                <ExternalLink href={project.githubLink} label={getLocalizedValue(uiText.sourceCode, language)} />
-              </div>
-            </aside>
-          </div>
-
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-            <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.buildNotes, language)}</p>
-            <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
-              {getLocalizedValue(uiText.howItWasPutTogether, language)}
+          <section className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+            <p className="text-xs font-normal uppercase tracking-[0.24em] text-sky-600 sm:text-sm">{getLocalizedValue(uiText.myRoleLabel, language)}</p>
+            <h2 className="mt-3 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900">
+              {getLocalizedValue(uiText.myRoleHeading, language)}
             </h2>
-            <div className="mt-6 grid gap-5 md:grid-cols-2">
-              {splitParagraphs(project.content).map((paragraph, index) => (
-                <div key={`${index}-${paragraph.slice(0, 24)}`} className="rounded-2xl bg-slate-50 p-5 sm:p-6">
-                  <p className="text-base leading-8 text-slate-600">{paragraph}</p>
-                </div>
+            <div className="mt-5 space-y-4 text-lg leading-8 text-slate-600">
+              {splitParagraphs(localizedMyRole).length > 0
+                ? splitParagraphs(localizedMyRole).map((paragraph) => <p key={paragraph}>{paragraph}</p>)
+                : <p>{getLocalizedValue(uiText.myRoleEmpty, language)}</p>}
+            </div>
+          </section>
+
+          <section className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-slate-100/90 p-6 shadow-xl sm:p-10">
+            <p className="text-xs font-medium uppercase tracking-[0.24em] text-slate-500 sm:text-sm">{getLocalizedValue(uiText.techStack, language)}</p>
+            <h2 className="mt-3 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900">
+              {getLocalizedValue(uiText.builtWith, language)}
+            </h2>
+
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              {(project.technologies || []).map((tech) => (
+                <span
+                  key={tech}
+                  className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-[0px_8px_24px_rgba(0,0,0,0.05)]"
+                >
+                  {tech}
+                </span>
               ))}
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.nextStep, language)}</p>
-                <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
-                  {getLocalizedValue(uiText.exploreLiveProject, language)}
-                </h2>
-                <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-                  {getLocalizedValue(uiText.exploreLiveProjectText, language)}
-                </p>
-              </div>
+          <section className="mx-auto max-w-3xl text-center">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+              <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.nextStep, language)}</p>
+              <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
+                {getLocalizedValue(uiText.exploreLiveProject, language)}
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-slate-600">{getLocalizedValue(uiText.exploreLiveProjectText, language)}</p>
 
-              <div className="grid w-full gap-4 sm:w-auto sm:grid-cols-2">
+              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <LinkCard href={project.demoLink} label={getLocalizedValue(uiText.openDemo, language)} language={language} />
                 <LinkCard href={project.githubLink} label={getLocalizedValue(uiText.viewRepository, language)} language={language} />
               </div>
@@ -1055,24 +1049,79 @@ function ArticleCard({ article, language = "vi" }) {
       <div className={`rounded-xl bg-gradient-to-br ${article.tone || "from-slate-200 to-slate-100"} p-4 shadow-lg sm:w-[240px] sm:shrink-0`}>
         <div className="flex h-full min-h-[190px] items-end rounded-xl border border-white/60 bg-white/55 p-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-sky-600">{article.category}</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(article.category, language)}</p>
             <p className="mt-2 text-2xl font-light leading-tight text-slate-800">{getLocalizedValue(uiText.notes, language)}</p>
           </div>
         </div>
       </div>
 
       <div className="min-w-0 flex-1">
-        <h3 className="mb-4 text-2xl font-light text-slate-800 sm:mb-5 sm:text-3xl">{article.title}</h3>
+        <h3 className="mb-4 text-2xl font-light text-slate-800 sm:mb-5 sm:text-3xl">{getLocalizedValue(article.title, language)}</h3>
 
         <p className="mb-4 flex flex-wrap items-center gap-3 text-sm leading-tight text-slate-500 sm:mb-5 sm:gap-5 sm:text-lg">
           <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-sky-700">
-            {article.category}
+            {getLocalizedValue(article.category, language)}
           </span>
           <span>{formatDisplayDate(article.publishedAt)}</span>
-          <span>{article.readTime}</span>
+          <span>{getLocalizedValue(article.readTime, language)}</span>
         </p>
 
-        <p className="mb-4 text-base leading-7 text-slate-600 sm:mb-5 sm:text-lg">{article.excerpt}</p>
+        <p className="mb-4 text-base leading-7 text-slate-600 sm:mb-5 sm:text-lg">{getLocalizedValue(article.excerpt, language)}</p>
+      </div>
+    </article>
+  );
+}
+
+function WorkListingCard({ item, reverse = false, language = "vi" }) {
+  const title = getLocalizedValue(item.title, language);
+  const company = getLocalizedValue(item.company, language);
+  const period = getLocalizedValue(item.period, language);
+  const summary = getLocalizedValue(item.summary, language);
+
+  return (
+    <article className={`flex flex-col items-center gap-8 md:gap-14 ${reverse ? "md:flex-row-reverse" : "md:flex-row"}`}>
+      <div className="w-full md:w-[58.75%] md:shrink-0">
+        <div className="ml-[-1px] w-[calc(100%+2px)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+          <div className="relative flex w-full items-center gap-3 border-b border-slate-200 bg-gray-50 px-[58px] py-3">
+            <div className="absolute left-4 top-1/2 flex -translate-y-1/2 gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+              <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+              <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+            </div>
+
+            <div className="flex-1 truncate text-center font-mono text-xs text-slate-400">
+              {[company, period].filter(Boolean).join(" · ") || title}
+            </div>
+          </div>
+
+          <div className="aspect-[4/3] bg-gradient-to-br from-slate-100 via-white to-sky-50 p-6">
+            <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-sky-600">{getLocalizedValue(uiText.work, language)}</p>
+                <h3 className="mt-3 text-2xl font-medium text-slate-800">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{summary}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full">
+        <div className="mb-2.5 sm:mb-4">
+          <h2 className="font-['Be_Vietnam_Pro'] text-3xl font-medium text-slate-900 md:text-4xl">{title}</h2>
+        </div>
+
+        <p className="mb-3 text-sm uppercase tracking-[0.2em] text-slate-400">{[company, period].filter(Boolean).join(" · ")}</p>
+        <p className="mb-5 text-lg leading-8 text-slate-600 sm:mb-6 sm:text-xl">{summary}</p>
+
+        <ul className="flex flex-col gap-1.5 text-slate-500 sm:gap-2 sm:text-lg">
+          {(item.highlights || []).map((highlight, index) => (
+            <li key={`${title}-${index}`} className="flex items-center gap-1.5">
+              <CheckIcon className="h-5 w-5" />
+              {getLocalizedValue(highlight, language)}
+            </li>
+          ))}
+        </ul>
       </div>
     </article>
   );
@@ -1095,13 +1144,13 @@ function ProjectShowcaseCard({ project, language = "vi" }) {
 
           <div className="aspect-video w-full bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-6">
             {project.image ? (
-              <img src={project.image} alt={project.title} className="h-full w-full rounded-2xl border border-slate-200/80 object-cover shadow-lg" />
+              <img src={project.image} alt={getLocalizedValue(project.title, language)} className="h-full w-full rounded-2xl border border-slate-200/80 object-cover shadow-lg" />
             ) : (
               <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
                 <div>
                   <p className="text-xs uppercase tracking-[0.22em] text-sky-600">{getLocalizedValue(uiText.projectPreview, language)}</p>
-                  <h3 className="mt-3 text-2xl font-light text-slate-800">{project.title}</h3>
-                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-600">{project.summary}</p>
+                  <h3 className="mt-3 text-2xl font-light text-slate-800">{getLocalizedValue(project.title, language)}</h3>
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-600">{getLocalizedValue(project.summary, language)}</p>
                 </div>
               </div>
             )}
@@ -1110,10 +1159,10 @@ function ProjectShowcaseCard({ project, language = "vi" }) {
       </Link>
 
       <div className="mb-2.5 mt-5 sm:mb-4 sm:mt-8">
-        <h3 className="text-2xl font-light text-slate-800 sm:text-3xl">{project.title}</h3>
+        <h3 className="text-2xl font-light text-slate-800 sm:text-3xl">{getLocalizedValue(project.title, language)}</h3>
       </div>
 
-      <p className="mb-4 text-base leading-7 text-slate-600 sm:mb-6 sm:text-lg">{project.description}</p>
+      <p className="mb-4 text-base leading-7 text-slate-600 sm:mb-6 sm:text-lg">{getLocalizedValue(project.description, language)}</p>
 
       <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500 sm:gap-x-5 sm:text-base">
         {(project.technologies || []).slice(0, 3).map((tech) => (
@@ -1147,14 +1196,14 @@ function ProjectListingCard({ project, reverse = false, language = "vi" }) {
 
             <div className="block w-full h-auto bg-white">
               {project.image ? (
-                <img src={project.image} alt={project.title} className="block h-auto w-full object-cover object-top" />
+                <img src={project.image} alt={getLocalizedValue(project.title, language)} className="block h-auto w-full object-cover object-top" />
               ) : (
                 <div className="aspect-[4/3] bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-6">
                   <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
                     <div>
                       <p className="text-xs uppercase tracking-[0.22em] text-sky-600">{getLocalizedValue(uiText.projectPreview, language)}</p>
-                      <h3 className="mt-3 text-2xl font-medium text-slate-800">{project.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">{project.summary}</p>
+                      <h3 className="mt-3 text-2xl font-medium text-slate-800">{getLocalizedValue(project.title, language)}</h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{getLocalizedValue(project.summary, language)}</p>
                     </div>
                   </div>
                 </div>
@@ -1168,12 +1217,12 @@ function ProjectListingCard({ project, reverse = false, language = "vi" }) {
         <div className="mb-2.5 sm:mb-4">
           <h2 className="font-['Be_Vietnam_Pro'] text-3xl font-medium text-slate-900 md:text-4xl">
             <Link to={`/projects/${project.slug}`} className="transition-opacity duration-300 hover:opacity-50">
-              {project.title}
+              {getLocalizedValue(project.title, language)}
             </Link>
           </h2>
         </div>
 
-        <p className="mb-4 text-lg leading-8 text-slate-600 sm:mb-6 sm:text-xl">{project.summary}</p>
+        <p className="mb-4 text-lg leading-8 text-slate-600 sm:mb-6 sm:text-xl">{getLocalizedValue(project.summary, language)}</p>
 
         <ul className="flex flex-col gap-1.5 text-slate-500 sm:gap-2 sm:text-xl">
           {(project.technologies || []).slice(0, 5).map((tech) => (
@@ -1202,11 +1251,11 @@ function ProjectGridCard({ project }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
       <div className="aspect-video bg-gradient-to-br from-sky-100 via-white to-cyan-50">
-        {project.image ? <img src={project.image} alt={project.title} className="h-full w-full object-cover" /> : null}
+        {project.image ? <img src={project.image} alt={getLocalizedValue(project.title, "vi")} className="h-full w-full object-cover" /> : null}
       </div>
       <div className="space-y-4 p-6">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-light text-slate-800">{project.title}</h2>
+          <h2 className="text-2xl font-light text-slate-800">{getLocalizedValue(project.title, "vi")}</h2>
           {project.featured ? (
             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-amber-700">
               Featured
@@ -1214,7 +1263,7 @@ function ProjectGridCard({ project }) {
           ) : null}
         </div>
 
-        <p className="text-base leading-7 text-slate-600">{project.summary}</p>
+        <p className="text-base leading-7 text-slate-600">{getLocalizedValue(project.summary, "vi")}</p>
 
         <div className="flex flex-wrap gap-2">
           {(project.technologies || []).map((tech) => (
@@ -1449,6 +1498,50 @@ function useArticles() {
 
   return {
     articles,
+    loading,
+    error
+  };
+}
+
+function useCodeItems() {
+  const [codeItems, setCodeItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCodeItems() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const payload = await getCodeItems();
+
+        if (active) {
+          setCodeItems(payload.data || []);
+        }
+      } catch (requestError) {
+        if (active) {
+          setCodeItems([]);
+          setError(extractErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCodeItems();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return {
+    codeItems,
     loading,
     error
   };

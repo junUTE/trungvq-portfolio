@@ -46,6 +46,10 @@ export function getArticles() {
   return request("/articles");
 }
 
+export function getCodeItems() {
+  return request("/code");
+}
+
 export function getWorkItems() {
   return request("/work");
 }
@@ -121,6 +125,10 @@ export function getAdminArticles() {
   return request("/admin/articles");
 }
 
+export function getAdminCodeItems() {
+  return request("/admin/code");
+}
+
 export function createAdminArticle(payload) {
   return request("/admin/articles", {
     method: "POST",
@@ -137,6 +145,26 @@ export function updateAdminArticle(articleId, payload) {
 
 export function deleteAdminArticle(articleId) {
   return request(`/admin/articles/${articleId}`, {
+    method: "DELETE"
+  });
+}
+
+export function createAdminCodeItem(payload) {
+  return request("/admin/code", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminCodeItem(codeItemId, payload) {
+  return request(`/admin/code/${codeItemId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteAdminCodeItem(codeItemId) {
+  return request(`/admin/code/${codeItemId}`, {
     method: "DELETE"
   });
 }

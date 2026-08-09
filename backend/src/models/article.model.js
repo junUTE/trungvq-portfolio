@@ -5,10 +5,14 @@ import { slugify } from "../utils/slugify.js";
 const articleSchema = new mongoose.Schema(
   {
     title: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       required: true,
-      trim: true,
-      minlength: 3
+      validate: {
+        validator(value) {
+          return typeof value === "string" || (value && typeof value === "object");
+        },
+        message: "Title must be a string or localized object."
+      }
     },
     slug: {
       type: String,
@@ -18,19 +22,16 @@ const articleSchema = new mongoose.Schema(
       lowercase: true
     },
     category: {
-      type: String,
-      required: true,
-      trim: true
+      type: mongoose.Schema.Types.Mixed,
+      required: true
     },
     readTime: {
-      type: String,
-      required: true,
-      trim: true
+      type: mongoose.Schema.Types.Mixed,
+      required: true
     },
     excerpt: {
-      type: String,
-      required: true,
-      trim: true
+      type: mongoose.Schema.Types.Mixed,
+      required: true
     },
     tone: {
       type: String,
@@ -60,7 +61,7 @@ articleSchema.index({ status: 1, order: 1, publishedAt: -1 });
 
 articleSchema.pre("validate", function setSlug(next) {
   if (!this.slug && this.title) {
-    this.slug = slugify(this.title);
+    this.slug = slugify(typeof this.title === "string" ? this.title : this.title?.vi || this.title?.en || "");
   }
 
   next();

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const introSegmentSchema = new mongoose.Schema(
   {
     text: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       required: true
     },
     tone: {
@@ -27,9 +27,8 @@ const profileSchema = new mongoose.Schema(
       trim: true
     },
     heroTitle: {
-      type: String,
-      required: true,
-      trim: true
+      type: mongoose.Schema.Types.Mixed,
+      required: true
     },
     displayName: {
       type: String,
@@ -57,9 +56,8 @@ const profileSchema = new mongoose.Schema(
       }
     },
     goalDescription: {
-      type: String,
-      required: true,
-      trim: true
+      type: mongoose.Schema.Types.Mixed,
+      required: true
     },
     githubUrl: {
       type: String,

@@ -1,23 +1,33 @@
 const seedArticles = [
   {
-    title: "Cach minh to chuc mot portfolio full-stack trong 7 ngay",
+    title: {
+      vi: "Cách mình tổ chức một portfolio full-stack trong 7 ngày",
+      en: "How I structure a full-stack portfolio in 7 days"
+    },
     slug: "portfolio-full-stack-trong-7-ngay",
-    category: "Career",
-    readTime: "4 minute read",
-    excerpt:
-      "Mot ke hoach thuc dung de hoan thien portfolio co frontend, backend, database, auth va deploy ma khong bi lan man.",
+    category: { vi: "Sự nghiệp", en: "Career" },
+    readTime: { vi: "Đọc trong 4 phút", en: "4 minute read" },
+    excerpt: {
+      vi: "Một kế hoạch thực dụng để hoàn thiện portfolio có frontend, backend, database, auth và deploy mà không bị lan man.",
+      en: "A practical plan to finish a portfolio with frontend, backend, database, auth, and deployment without getting scattered."
+    },
     tone: "from-slate-200 to-slate-100",
     publishedAt: new Date("2026-07-07"),
     status: "published",
     order: 1
   },
   {
-    title: "Nhung gi nha tuyen dung thuc su muon thay o mot project ca nhan",
+    title: {
+      vi: "Những gì nhà tuyển dụng thực sự muốn thấy ở một project cá nhân",
+      en: "What recruiters actually want to see in a personal project"
+    },
     slug: "nha-tuyen-dung-muon-thay-o-project-ca-nhan",
-    category: "Frontend",
-    readTime: "5 minute read",
-    excerpt:
-      "Thay vi nhoi qua nhieu hieu ung, minh tap trung vao cau truc, noi dung that, toc do tai va trai nghiem nguoi dung ro rang.",
+    category: { vi: "Frontend", en: "Frontend" },
+    readTime: { vi: "Đọc trong 5 phút", en: "5 minute read" },
+    excerpt: {
+      vi: "Thay vì nhồi quá nhiều hiệu ứng, mình tập trung vào cấu trúc, nội dung thật, tốc độ tải và trải nghiệm người dùng rõ ràng.",
+      en: "Instead of stuffing in too many effects, I focus on structure, real content, loading speed, and clear user experience."
+    },
     tone: "from-sky-200 to-cyan-100",
     publishedAt: new Date("2026-07-05"),
     status: "published",

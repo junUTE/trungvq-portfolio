@@ -1,3 +1,5 @@
+import { hasLocalizedContent } from "./localization.js";
+
 const urlPattern = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -7,27 +9,27 @@ function normalizeString(value) {
 
 export function validateProjectPayload(payload) {
   const errors = [];
-  const title = normalizeString(payload.title);
-  const summary = normalizeString(payload.summary);
-  const description = normalizeString(payload.description);
-  const content = normalizeString(payload.content);
   const githubLink = normalizeString(payload.githubLink);
   const demoLink = normalizeString(payload.demoLink);
 
-  if (title.length < 3) {
-    errors.push("Title must be at least 3 characters.");
+  if (!hasLocalizedContent(payload.title)) {
+    errors.push("Title is required in at least one language.");
   }
 
-  if (!summary) {
-    errors.push("Summary is required.");
+  if (!hasLocalizedContent(payload.summary)) {
+    errors.push("Summary is required in at least one language.");
   }
 
-  if (!description) {
-    errors.push("Description is required.");
+  if (!hasLocalizedContent(payload.description)) {
+    errors.push("Description is required in at least one language.");
   }
 
-  if (!content) {
-    errors.push("Content is required.");
+  if (!hasLocalizedContent(payload.content)) {
+    errors.push("Content is required in at least one language.");
+  }
+
+  if (payload.myRole && !hasLocalizedContent(payload.myRole)) {
+    errors.push("My role must contain content when provided.");
   }
 
   if (!Array.isArray(payload.technologies)) {
@@ -40,6 +42,45 @@ export function validateProjectPayload(payload) {
 
   if (demoLink && !urlPattern.test(demoLink)) {
     errors.push("Demo link must be a valid URL.");
+  }
+
+  return errors;
+}
+
+export function validateCodePayload(payload) {
+  const errors = [];
+  const owner = normalizeString(payload.owner);
+  const name = normalizeString(payload.name);
+  const repositoryUrl = normalizeString(payload.repositoryUrl);
+  const tags = Array.isArray(payload.tags) ? payload.tags : null;
+
+  if (owner.length < 2) {
+    errors.push("Owner must be at least 2 characters.");
+  }
+
+  if (name.length < 2) {
+    errors.push("Repository name must be at least 2 characters.");
+  }
+
+  if (!hasLocalizedContent(payload.summary)) {
+    errors.push("Summary is required in at least one language.");
+  }
+
+  if (!repositoryUrl || !urlPattern.test(repositoryUrl)) {
+    errors.push("Repository URL must be a valid URL.");
+  }
+
+  if (!tags) {
+    errors.push("Tags must be an array.");
+  } else if (
+    tags.some(
+      (tag) =>
+        !tag ||
+        !hasLocalizedContent(tag.label) ||
+        (tag.color !== undefined && typeof tag.color !== "string")
+    )
+  ) {
+    errors.push("Each tag must include a label and an optional color.");
   }
 
   return errors;
@@ -117,8 +158,6 @@ export function validateProfilePayload(payload) {
   const errors = [];
   const displayName = normalizeString(payload.displayName);
   const brandInitials = normalizeString(payload.brandInitials);
-  const heroTitle = normalizeString(payload.heroTitle);
-  const goalDescription = normalizeString(payload.goalDescription);
   const headerAvatarUrl = normalizeString(payload.headerAvatarUrl);
   const githubUrl = normalizeString(payload.githubUrl);
   const linkedinUrl = normalizeString(payload.linkedinUrl);
@@ -132,8 +171,8 @@ export function validateProfilePayload(payload) {
     errors.push("Brand initials are required.");
   }
 
-  if (heroTitle.length < 3) {
-    errors.push("Hero title must be at least 3 characters.");
+  if (!hasLocalizedContent(payload.heroTitle)) {
+    errors.push("Hero title is required in at least one language.");
   }
 
   if (introSegments.length === 0) {
@@ -144,16 +183,15 @@ export function validateProfilePayload(payload) {
     introSegments.some(
       (segment) =>
         !segment ||
-        typeof segment.text !== "string" ||
-        !segment.text.trim() ||
+        !hasLocalizedContent(segment.text) ||
         (segment.tone !== undefined && typeof segment.tone !== "string")
     )
   ) {
     errors.push("Each intro segment must include text and an optional tone.");
   }
 
-  if (!goalDescription) {
-    errors.push("Goal description is required.");
+  if (!hasLocalizedContent(payload.goalDescription)) {
+    errors.push("Goal description is required in at least one language.");
   }
 
   if (headerAvatarUrl && !urlPattern.test(headerAvatarUrl)) {
@@ -173,25 +211,20 @@ export function validateProfilePayload(payload) {
 
 export function validateArticlePayload(payload) {
   const errors = [];
-  const title = normalizeString(payload.title);
-  const category = normalizeString(payload.category);
-  const readTime = normalizeString(payload.readTime);
-  const excerpt = normalizeString(payload.excerpt);
-
-  if (title.length < 3) {
-    errors.push("Article title must be at least 3 characters.");
+  if (!hasLocalizedContent(payload.title)) {
+    errors.push("Article title is required in at least one language.");
   }
 
-  if (!category) {
-    errors.push("Category is required.");
+  if (!hasLocalizedContent(payload.category)) {
+    errors.push("Category is required in at least one language.");
   }
 
-  if (!readTime) {
-    errors.push("Read time is required.");
+  if (!hasLocalizedContent(payload.readTime)) {
+    errors.push("Read time is required in at least one language.");
   }
 
-  if (!excerpt) {
-    errors.push("Excerpt is required.");
+  if (!hasLocalizedContent(payload.excerpt)) {
+    errors.push("Excerpt is required in at least one language.");
   }
 
   return errors;
@@ -199,19 +232,18 @@ export function validateArticlePayload(payload) {
 
 export function validateWorkPayload(payload) {
   const errors = [];
-  const title = normalizeString(payload.title);
-  const summary = normalizeString(payload.summary);
-
-  if (title.length < 3) {
-    errors.push("Work title must be at least 3 characters.");
+  if (!hasLocalizedContent(payload.title)) {
+    errors.push("Work title is required in at least one language.");
   }
 
-  if (!summary) {
-    errors.push("Summary is required.");
+  if (!hasLocalizedContent(payload.summary)) {
+    errors.push("Summary is required in at least one language.");
   }
 
   if (!Array.isArray(payload.highlights)) {
     errors.push("Highlights must be an array.");
+  } else if (payload.highlights.some((item) => !hasLocalizedContent(item))) {
+    errors.push("Each highlight must be filled in at least one language.");
   }
 
   return errors;

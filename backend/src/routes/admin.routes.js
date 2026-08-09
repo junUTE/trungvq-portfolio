@@ -2,17 +2,21 @@ import { Router } from "express";
 
 import {
   createAdminArticle,
+  createAdminCodeItem,
   createAdminProject,
   createAdminWorkItem,
+  deleteAdminCodeItem,
   deleteAdminProject,
   deleteAdminArticle,
   deleteAdminWorkItem,
   getAdminArticles,
+  getAdminCodeItems,
   getAdminContacts,
   getAdminProfile,
   getAdminProjects,
   getAdminWorkItems,
   updateAdminArticle,
+  updateAdminCodeItem,
   updateAdminContact,
   updateAdminProfile,
   updateAdminProject,
@@ -38,6 +42,11 @@ router.get("/articles", getAdminArticles);
 router.post("/articles", createAdminArticle);
 router.put("/articles/:id", updateAdminArticle);
 router.delete("/articles/:id", deleteAdminArticle);
+
+router.get("/code", getAdminCodeItems);
+router.post("/code", createAdminCodeItem);
+router.put("/code/:id", updateAdminCodeItem);
+router.delete("/code/:id", deleteAdminCodeItem);
 
 router.get("/work", getAdminWorkItems);
 router.post("/work", createAdminWorkItem);

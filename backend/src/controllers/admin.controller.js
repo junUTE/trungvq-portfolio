@@ -1,13 +1,16 @@
 import Article from "../models/article.model.js";
+import Code from "../models/code.model.js";
 import Contact from "../models/contact.model.js";
 import Profile from "../models/profile.model.js";
 import Project from "../models/project.model.js";
 import Work from "../models/work.model.js";
 import { deleteImageAsset, uploadImageAsset } from "../services/cloudinary.service.js";
+import { getLocalizedText, toLocalizedValue } from "../utils/localization.js";
 import { slugify } from "../utils/slugify.js";
 import {
   validateAssetPayload,
   validateArticlePayload,
+  validateCodePayload,
   validateContactStatusPayload,
   validateProfilePayload,
   validateProjectPayload
@@ -29,8 +32,8 @@ function serializeUser(user) {
 }
 
 function normalizeProjectPayload(body, currentProject = null) {
-  const title = body.title.trim();
-  const slug = body.slug?.trim() ? slugify(body.slug) : slugify(title);
+  const title = toLocalizedValue(body.title);
+  const slug = body.slug?.trim() ? slugify(body.slug) : slugify(getLocalizedText(title));
   const technologies = Array.isArray(body.technologies)
     ? body.technologies
         .map((item) => (typeof item === "string" ? item.trim() : ""))
@@ -40,9 +43,10 @@ function normalizeProjectPayload(body, currentProject = null) {
   return {
     title,
     slug,
-    summary: body.summary.trim(),
-    description: body.description.trim(),
-    content: body.content.trim(),
+    summary: toLocalizedValue(body.summary),
+    description: toLocalizedValue(body.description),
+    content: toLocalizedValue(body.content),
+    myRole: body.myRole ? toLocalizedValue(body.myRole) : "",
     technologies,
     githubLink: typeof body.githubLink === "string" ? body.githubLink.trim() : "",
     demoLink: typeof body.demoLink === "string" ? body.demoLink.trim() : "",
@@ -61,10 +65,10 @@ function normalizeProfilePayload(body, currentProfile = null) {
   const introSegments = Array.isArray(body.introSegments)
     ? body.introSegments
         .map((segment) => ({
-          text: typeof segment?.text === "string" ? segment.text : "",
+          text: toLocalizedValue(segment?.text),
           tone: typeof segment?.tone === "string" ? segment.tone.trim() : ""
         }))
-        .filter((segment) => segment.text.trim())
+        .filter((segment) => getLocalizedText(segment.text))
     : currentProfile?.introSegments || [];
 
   return {
@@ -73,9 +77,9 @@ function normalizeProfilePayload(body, currentProfile = null) {
     brandInitials: body.brandInitials.trim(),
     headerAvatarUrl:
       typeof body.headerAvatarUrl === "string" ? body.headerAvatarUrl.trim() : currentProfile?.headerAvatarUrl || "",
-    heroTitle: body.heroTitle.trim(),
+    heroTitle: toLocalizedValue(body.heroTitle),
     introSegments,
-    goalDescription: body.goalDescription.trim(),
+    goalDescription: toLocalizedValue(body.goalDescription),
     githubUrl: typeof body.githubUrl === "string" ? body.githubUrl.trim() : currentProfile?.githubUrl || "",
     linkedinUrl:
       typeof body.linkedinUrl === "string" ? body.linkedinUrl.trim() : currentProfile?.linkedinUrl || ""
@@ -83,14 +87,14 @@ function normalizeProfilePayload(body, currentProfile = null) {
 }
 
 function normalizeArticlePayload(body) {
-  const title = body.title.trim();
+  const title = toLocalizedValue(body.title);
 
   return {
     title,
-    slug: body.slug?.trim() ? slugify(body.slug) : slugify(title),
-    category: body.category.trim(),
-    readTime: body.readTime.trim(),
-    excerpt: body.excerpt.trim(),
+    slug: body.slug?.trim() ? slugify(body.slug) : slugify(getLocalizedText(title)),
+    category: toLocalizedValue(body.category),
+    readTime: toLocalizedValue(body.readTime),
+    excerpt: toLocalizedValue(body.excerpt),
     tone: typeof body.tone === "string" && body.tone.trim() ? body.tone.trim() : "from-slate-200 to-slate-100",
     publishedAt: body.publishedAt ? new Date(body.publishedAt) : new Date(),
     status: body.status === "published" ? "published" : "draft",
@@ -101,16 +105,37 @@ function normalizeArticlePayload(body) {
 function normalizeWorkPayload(body) {
   const highlights = Array.isArray(body.highlights)
     ? body.highlights
-        .map((item) => (typeof item === "string" ? item.trim() : ""))
-        .filter(Boolean)
+        .map((item) => toLocalizedValue(item))
+        .filter((item) => getLocalizedText(item))
     : [];
 
   return {
-    title: body.title.trim(),
-    company: typeof body.company === "string" ? body.company.trim() : "",
-    period: typeof body.period === "string" ? body.period.trim() : "",
-    summary: body.summary.trim(),
+    title: toLocalizedValue(body.title),
+    company: body.company ? toLocalizedValue(body.company) : "",
+    period: body.period ? toLocalizedValue(body.period) : "",
+    summary: toLocalizedValue(body.summary),
     highlights,
+    status: body.status === "published" ? "published" : "draft",
+    order: Number.isFinite(Number(body.order)) ? Number(body.order) : 0
+  };
+}
+
+function normalizeCodePayload(body) {
+  const tags = Array.isArray(body.tags)
+    ? body.tags
+        .map((tag) => ({
+          label: toLocalizedValue(tag?.label),
+          color: typeof tag?.color === "string" && tag.color.trim() ? tag.color.trim() : "bg-slate-500"
+        }))
+        .filter((tag) => getLocalizedText(tag.label))
+    : [];
+
+  return {
+    owner: body.owner.trim(),
+    name: body.name.trim(),
+    summary: toLocalizedValue(body.summary),
+    repositoryUrl: body.repositoryUrl.trim(),
+    tags,
     status: body.status === "published" ? "published" : "draft",
     order: Number.isFinite(Number(body.order)) ? Number(body.order) : 0
   };
@@ -374,6 +399,89 @@ export async function getAdminWorkItems(_request, response, next) {
 
     return response.status(200).json({
       data: workItems
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getAdminCodeItems(_request, response, next) {
+  try {
+    const codeItems = await Code.find().sort({ order: 1, createdAt: -1 }).lean();
+
+    return response.status(200).json({
+      data: codeItems
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function createAdminCodeItem(request, response, next) {
+  try {
+    const errors = validateCodePayload(request.body);
+
+    if (errors.length > 0) {
+      return response.status(400).json({
+        message: "Validation failed.",
+        errors
+      });
+    }
+
+    const codeItem = await Code.create(normalizeCodePayload(request.body));
+
+    return response.status(201).json({
+      message: "Code item created successfully.",
+      data: codeItem
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function updateAdminCodeItem(request, response, next) {
+  try {
+    const codeItem = await Code.findById(request.params.id);
+
+    if (!codeItem) {
+      return response.status(404).json({
+        message: "Code item not found."
+      });
+    }
+
+    const errors = validateCodePayload(request.body);
+
+    if (errors.length > 0) {
+      return response.status(400).json({
+        message: "Validation failed.",
+        errors
+      });
+    }
+
+    Object.assign(codeItem, normalizeCodePayload(request.body));
+    await codeItem.save();
+
+    return response.status(200).json({
+      message: "Code item updated successfully.",
+      data: codeItem
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function deleteAdminCodeItem(request, response, next) {
+  try {
+    const codeItem = await Code.findByIdAndDelete(request.params.id);
+
+    if (!codeItem) {
+      return response.status(404).json({
+        message: "Code item not found."
+      });
+    }
+
+    return response.status(200).json({
+      message: "Code item deleted successfully."
     });
   } catch (error) {
     return next(error);

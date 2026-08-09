@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js
 import adminRouter from "./routes/admin.routes.js";
 import articleRouter from "./routes/article.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import codeRouter from "./routes/code.routes.js";
 import contactRouter from "./routes/contact.routes.js";
 import healthRouter from "./routes/health.routes.js";
 import profileRouter from "./routes/profile.routes.js";
@@ -47,6 +48,7 @@ app.get("/", (_request, response) => {
       projects: "/api/projects",
       profile: "/api/profile",
       articles: "/api/articles",
+      code: "/api/code",
       work: "/api/work",
       contacts: "/api/contacts",
       auth: "/api/auth",
@@ -59,6 +61,7 @@ app.use("/api/health", healthRouter);
 app.use("/api/projects", projectRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/articles", articleRouter);
+app.use("/api/code", codeRouter);
 app.use("/api/work", workRouter);
 app.use("/api/contacts", contactRouter);
 app.use("/api/auth", authRouter);
