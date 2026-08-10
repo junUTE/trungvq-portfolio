@@ -67,7 +67,7 @@ function normalizeProfilePayload(body, currentProfile = null) {
   const introSegments = Array.isArray(body.introSegments)
     ? body.introSegments
         .map((segment) => ({
-          text: toLocalizedValue(segment?.text),
+          text: toLocalizedValue(segment?.text, { preserveWhitespace: true }),
           tone: typeof segment?.tone === "string" ? segment.tone.trim() : ""
         }))
         .filter((segment) => getLocalizedText(segment.text))

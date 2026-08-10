@@ -1,20 +1,24 @@
-function normalizeText(value) {
-  return typeof value === "string" ? value.trim() : "";
+function normalizeText(value, { preserveWhitespace = false } = {}) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return preserveWhitespace ? value.replace(/\r\n/g, "\n") : value.trim();
 }
 
 export function isLocalizedObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-export function toLocalizedValue(value) {
+export function toLocalizedValue(value, options = {}) {
   if (isLocalizedObject(value)) {
     return {
-      vi: normalizeText(value.vi),
-      en: normalizeText(value.en)
+      vi: normalizeText(value.vi, options),
+      en: normalizeText(value.en, options)
     };
   }
 
-  const normalized = normalizeText(value);
+  const normalized = normalizeText(value, options);
 
   return {
     vi: normalized,

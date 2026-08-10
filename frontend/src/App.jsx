@@ -501,12 +501,8 @@ function HomePage({ profileState, language }) {
             <h1 className="text-3xl font-light tracking-tight text-slate-800 sm:text-5xl">
               {getLocalizedValue(profile.heroTitle, language)}
             </h1>
-            <p className="hero-intro-text text-xl leading-relaxed text-slate-700 sm:text-2xl">
-              {(profile.introSegments || []).map((segment, index) => (
-                <Highlight key={`${getLocalizedValue(segment.text, language)}-${index}`} tone={segment.tone}>
-                  {getLocalizedValue(segment.text, language)}
-                </Highlight>
-              ))}
+            <p className="hero-intro-text text-xl leading-[1.9] text-slate-700 sm:text-2xl sm:leading-[1.85]">
+              {renderIntroSegments(profile.introSegments || [], language)}
             </p>
             <p className="text-lg leading-relaxed text-slate-600 sm:text-xl">
               {getLocalizedValue(profile.goalDescription, language)}
@@ -1421,8 +1417,15 @@ function InfoCard({ message, tone = "default", className = "" }) {
   return <div className={`rounded-2xl border p-5 text-base ${palette} ${className}`.trim()}>{message}</div>;
 }
 
-function Highlight({ children, tone }) {
-  return <span className={tone}>{children}</span>;
+function Highlight({ children, tone, emphasized = false }) {
+  if (!emphasized) {
+    return <span>{children}</span>;
+  }
+
+  const baseClassName =
+    "inline font-medium text-slate-800 underline decoration-2 underline-offset-4";
+
+  return <span className={`${baseClassName} ${tone || ""}`.trim()}>{children}</span>;
 }
 
 function StatusPill({ value }) {
@@ -1803,6 +1806,53 @@ function getLocalizedValue(value, language) {
   }
 
   return String(value);
+}
+
+function renderIntroSegments(segments, language) {
+  return segments.map((segment, index) => {
+    const text = getLocalizedValue(segment?.text, language);
+
+    if (!text) {
+      return null;
+    }
+
+    const previousText = index > 0 ? getLocalizedValue(segments[index - 1]?.text, language) : "";
+    const needsLeadingSpace = shouldInsertSegmentGap(previousText, text);
+    const emphasized = Boolean(segment?.tone);
+
+    return (
+      <Highlight
+        key={`${text}-${index}`}
+        tone={segment?.tone}
+        emphasized={emphasized}
+      >
+        {`${needsLeadingSpace ? " " : ""}${text}`}
+      </Highlight>
+    );
+  });
+}
+
+function shouldInsertSegmentGap(previousText, nextText) {
+  if (!previousText || !nextText) {
+    return false;
+  }
+
+  const previousLastChar = previousText.slice(-1);
+  const nextFirstChar = nextText[0];
+
+  if (/\s/.test(previousLastChar) || /\s/.test(nextFirstChar)) {
+    return false;
+  }
+
+  if (/[([{/"'“‘-]/.test(previousLastChar)) {
+    return false;
+  }
+
+  if (/[)\]}.,!?;:/%"'”’-]/.test(nextFirstChar)) {
+    return false;
+  }
+
+  return true;
 }
 
 export default App;
