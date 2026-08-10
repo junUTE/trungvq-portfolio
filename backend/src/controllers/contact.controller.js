@@ -2,6 +2,20 @@ import Contact from "../models/contact.model.js";
 import { sendContactAutoReply, sendContactNotification } from "../services/mail.service.js";
 import { validateContactPayload } from "../utils/validators.js";
 
+export async function getContactStats(_request, response, next) {
+  try {
+    const uniqueEmails = await Contact.distinct("email");
+
+    return response.status(200).json({
+      data: {
+        uniqueContactCount: uniqueEmails.length
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 export async function createContact(request, response, next) {
   try {
     const errors = validateContactPayload(request.body);

@@ -10,6 +10,7 @@ function normalizeString(value) {
 export function validateProjectPayload(payload) {
   const errors = [];
   const githubLink = normalizeString(payload.githubLink);
+  const githubLinkSecondary = normalizeString(payload.githubLinkSecondary);
   const demoLink = normalizeString(payload.demoLink);
 
   if (!hasLocalizedContent(payload.title)) {
@@ -38,6 +39,10 @@ export function validateProjectPayload(payload) {
 
   if (githubLink && !urlPattern.test(githubLink)) {
     errors.push("GitHub link must be a valid URL.");
+  }
+
+  if (githubLinkSecondary && !urlPattern.test(githubLinkSecondary)) {
+    errors.push("Secondary GitHub link must be a valid URL.");
   }
 
   if (demoLink && !urlPattern.test(demoLink)) {

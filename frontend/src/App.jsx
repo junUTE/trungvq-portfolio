@@ -8,6 +8,7 @@ import {
   createContact,
   extractErrorMessage,
   getArticles,
+  getContactStats,
   getCodeItems,
   getCurrentAdmin,
   getProfile,
@@ -170,8 +171,8 @@ const uiText = {
     en: "How it was put together"
   },
   nextStep: {
-    vi: "Bước tiếp theo",
-    en: "Next Step"
+    vi: "Liên kết dự án",
+    en: "Project Links"
   },
   myRoleLabel: {
     vi: "Vai trò",
@@ -200,6 +201,14 @@ const uiText = {
   viewRepository: {
     vi: "Xem repository",
     en: "View Repository"
+  },
+  viewRepositoryPrimary: {
+    vi: "Xem repository 1",
+    en: "View Repository 1"
+  },
+  viewRepositorySecondary: {
+    vi: "Xem repository 2",
+    en: "View Repository 2"
   },
   projectPreview: {
     vi: "Xem trước dự án",
@@ -732,10 +741,8 @@ function ProjectDetailPage({ language }) {
 
   const localizedTitle = getLocalizedValue(project?.title, language);
   const localizedSummary = getLocalizedValue(project?.summary, language);
-  const localizedDescription = getLocalizedValue(project?.description, language);
   const localizedContent = getLocalizedValue(project?.content, language);
   const localizedMyRole = getLocalizedValue(project?.myRole, language);
-  const descriptionParagraphs = splitParagraphs(localizedDescription);
   const contentParagraphs = splitParagraphs(localizedContent);
   const detailSections = contentParagraphs.map((paragraph, index) => ({
     eyebrow:
@@ -781,15 +788,16 @@ function ProjectDetailPage({ language }) {
             <p className="mt-4 text-lg leading-8 text-slate-700 sm:text-xl">{localizedSummary}</p>
 
             {(project.technologies || []).length > 0 ? (
-              <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-slate-500 sm:text-base">
+              <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-slate-600 sm:text-base">
                 {(project.technologies || []).map((tech) => (
                   <li key={tech} className="flex items-center gap-1.5">
-                    <CheckIcon className="h-5 w-5" />
+                    <CheckIcon className="h-5 w-5 text-slate-500" />
                     {tech}
                   </li>
                 ))}
               </ul>
             ) : null}
+
           </div>
 
           <div className="w-[calc(100%+2px)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
@@ -813,7 +821,9 @@ function ProjectDetailPage({ language }) {
 
             <div className="block w-full bg-white">
               {project.image ? (
-                <img src={project.image} alt={localizedTitle} className="block h-auto w-full object-cover object-top" />
+                <div className="w-full overflow-hidden bg-slate-100">
+                  <img src={project.image} alt={localizedTitle} className="block h-auto max-h-none w-full object-contain object-top" />
+                </div>
               ) : (
                 <div className="aspect-[16/9] bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-6 sm:p-8">
                   <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-lg backdrop-blur">
@@ -828,40 +838,39 @@ function ProjectDetailPage({ language }) {
             </div>
           </div>
 
-          <div className="mx-auto max-w-3xl">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-              <div className="space-y-5 text-lg leading-8 text-slate-600">
-                {descriptionParagraphs.length > 0 ? descriptionParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>) : <p>{localizedSummary}</p>}
-              </div>
-            </div>
-          </div>
-
           {detailSections.length > 0 ? (
             <div className="mx-auto max-w-3xl space-y-8 sm:space-y-12">
               {detailSections.map((section, index) => (
-                <section key={`${section.eyebrow}-${index}`} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+                <section key={`${section.eyebrow}-${index}`} className="px-2 sm:px-3">
                   <p className="text-xs font-normal uppercase tracking-[0.24em] text-sky-600 sm:text-sm">{section.eyebrow}</p>
                   <h2 className="mt-3 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">{section.title}</h2>
-                  <p className="mt-5 text-lg leading-8 text-slate-600">{section.body}</p>
+                  <p className="mt-5 text-justify text-lg leading-8 text-slate-700">{section.body}</p>
                 </section>
               ))}
             </div>
           ) : null}
 
-          <section className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+          <section className="mx-auto max-w-3xl px-2 sm:px-3">
             <p className="text-xs font-normal uppercase tracking-[0.24em] text-sky-600 sm:text-sm">{getLocalizedValue(uiText.myRoleLabel, language)}</p>
             <h2 className="mt-3 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900">
               {getLocalizedValue(uiText.myRoleHeading, language)}
             </h2>
-            <div className="mt-5 space-y-4 text-lg leading-8 text-slate-600">
-              {splitParagraphs(localizedMyRole).length > 0
-                ? splitParagraphs(localizedMyRole).map((paragraph) => <p key={paragraph}>{paragraph}</p>)
-                : <p>{getLocalizedValue(uiText.myRoleEmpty, language)}</p>}
-            </div>
+            {splitParagraphs(localizedMyRole).length > 0 ? (
+              <ul className="mt-5 space-y-4 text-lg leading-8 text-slate-700">
+                {splitParagraphs(localizedMyRole).map((paragraph) => (
+                  <li key={paragraph} className="flex items-start gap-3">
+                    <span className="mt-3 h-2.5 w-2.5 shrink-0 rounded-full bg-sky-600"></span>
+                    <span>{paragraph}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-5 text-lg leading-8 text-slate-700">{getLocalizedValue(uiText.myRoleEmpty, language)}</p>
+            )}
           </section>
 
-          <section className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-slate-100/90 p-6 shadow-xl sm:p-10">
-            <p className="text-xs font-medium uppercase tracking-[0.24em] text-slate-500 sm:text-sm">{getLocalizedValue(uiText.techStack, language)}</p>
+          <section className="mx-auto max-w-3xl px-2 sm:px-3">
+            <p className="text-xs font-medium uppercase tracking-[0.24em] text-sky-600 sm:text-sm">{getLocalizedValue(uiText.techStack, language)}</p>
             <h2 className="mt-3 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900">
               {getLocalizedValue(uiText.builtWith, language)}
             </h2>
@@ -870,7 +879,7 @@ function ProjectDetailPage({ language }) {
               {(project.technologies || []).map((tech) => (
                 <span
                   key={tech}
-                  className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-[0px_8px_24px_rgba(0,0,0,0.05)]"
+                  className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-[0px_8px_24px_rgba(0,0,0,0.05)]"
                 >
                   {tech}
                 </span>
@@ -878,18 +887,33 @@ function ProjectDetailPage({ language }) {
             </div>
           </section>
 
-          <section className="mx-auto max-w-3xl text-center">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
-              <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.nextStep, language)}</p>
-              <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
-                {getLocalizedValue(uiText.exploreLiveProject, language)}
-              </h2>
-              <p className="mt-4 text-lg leading-8 text-slate-600">{getLocalizedValue(uiText.exploreLiveProjectText, language)}</p>
+          <section className="mx-auto max-w-3xl px-2 text-left sm:px-3">
+            <p className="text-sm uppercase tracking-[0.24em] text-sky-600">{getLocalizedValue(uiText.nextStep, language)}</p>
+            <h2 className="mt-4 font-['Be_Vietnam_Pro'] text-3xl font-medium leading-tight text-slate-900 sm:text-4xl">
+              {getLocalizedValue(uiText.exploreLiveProject, language)}
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-slate-700">{getLocalizedValue(uiText.exploreLiveProjectText, language)}</p>
 
-              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <LinkCard href={project.demoLink} label={getLocalizedValue(uiText.openDemo, language)} language={language} />
-                <LinkCard href={project.githubLink} label={getLocalizedValue(uiText.viewRepository, language)} language={language} />
-              </div>
+            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap">
+              {project.demoLink ? <LinkCard href={project.demoLink} label={getLocalizedValue(uiText.openDemo, language)} language={language} /> : null}
+              {buildProjectRepositoryLinks(project, language).length > 0 ? (
+                buildProjectRepositoryLinks(project, language).map((repositoryLink) => (
+                  <LinkCard
+                    key={repositoryLink.href}
+                    href={repositoryLink.href}
+                    label={repositoryLink.label}
+                    language={language}
+                    icon={<GitHubIcon className="h-4 w-4" />}
+                  />
+                ))
+              ) : (
+                <LinkCard
+                  href=""
+                  label={getLocalizedValue(uiText.viewRepository, language)}
+                  language={language}
+                  icon={<GitHubIcon className="h-4 w-4" />}
+                />
+              )}
             </div>
           </section>
         </div>
@@ -903,6 +927,31 @@ function ContactPage({ language }) {
   const [formData, setFormData] = useState(initialForm);
   const [status, setStatus] = useState("idle");
   const [feedback, setFeedback] = useState("");
+  const [uniqueContactCount, setUniqueContactCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadContactStats() {
+      try {
+        const payload = await getContactStats();
+
+        if (active) {
+          setUniqueContactCount(Number(payload?.data?.uniqueContactCount) || 0);
+        }
+      } catch {
+        if (active) {
+          setUniqueContactCount(0);
+        }
+      }
+    }
+
+    loadContactStats();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -913,6 +962,14 @@ function ContactPage({ language }) {
       const payload = await createContact(formData);
       setStatus("success");
       setFeedback(payload.message || getLocalizedValue(uiText.contactSuccess, language));
+
+      try {
+        const statsPayload = await getContactStats();
+        setUniqueContactCount(Number(statsPayload?.data?.uniqueContactCount) || 0);
+      } catch {
+        // Keep the last known count if the stats refresh fails.
+      }
+
       setFormData(initialForm);
     } catch (error) {
       setStatus("error");
@@ -999,8 +1056,8 @@ function ContactPage({ language }) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm leading-7 text-slate-500">
             {language === "en"
-              ? "I usually reply within 2 days."
-              : "Mình thường phản hồi trong vòng 2 ngày."}
+              ? `${uniqueContactCount} people have contacted me so far.`
+              : `${uniqueContactCount} người đã từng liên hệ với mình.`}
           </p>
 
           <button
@@ -1144,7 +1201,9 @@ function ProjectShowcaseCard({ project, language = "vi" }) {
 
           <div className="aspect-video w-full bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-6">
             {project.image ? (
-              <img src={project.image} alt={getLocalizedValue(project.title, language)} className="h-full w-full rounded-2xl border border-slate-200/80 object-cover shadow-lg" />
+              <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-200/80 shadow-lg">
+                <img src={project.image} alt={getLocalizedValue(project.title, language)} className="h-full w-full object-cover object-top" />
+              </div>
             ) : (
               <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
                 <div>
@@ -1162,7 +1221,7 @@ function ProjectShowcaseCard({ project, language = "vi" }) {
         <h3 className="text-2xl font-light text-slate-800 sm:text-3xl">{getLocalizedValue(project.title, language)}</h3>
       </div>
 
-      <p className="mb-4 text-base leading-7 text-slate-600 sm:mb-6 sm:text-lg">{getLocalizedValue(project.description, language)}</p>
+      <p className="mb-4 text-base leading-7 text-slate-600 sm:mb-6 sm:text-lg">{getLocalizedValue(project.summary, language)}</p>
 
       <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500 sm:gap-x-5 sm:text-base">
         {(project.technologies || []).slice(0, 3).map((tech) => (
@@ -1196,7 +1255,9 @@ function ProjectListingCard({ project, reverse = false, language = "vi" }) {
 
             <div className="block w-full h-auto bg-white">
               {project.image ? (
-                <img src={project.image} alt={getLocalizedValue(project.title, language)} className="block h-auto w-full object-cover object-top" />
+                <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100">
+                  <img src={project.image} alt={getLocalizedValue(project.title, language)} className="h-full w-full object-cover object-top" />
+                </div>
               ) : (
                 <div className="aspect-[4/3] bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-6">
                   <div className="flex h-full items-end rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
@@ -1279,14 +1340,16 @@ function ProjectGridCard({ project }) {
             <ArrowIcon className="h-4 w-4" />
           </Link>
           <ExternalLink href={project.demoLink} label="Demo" />
-          <ExternalLink href={project.githubLink} label="GitHub" />
+          {buildProjectRepositoryLinks(project, "en").map((repositoryLink) => (
+            <ExternalLink key={repositoryLink.href} href={repositoryLink.href} label={repositoryLink.shortLabel} />
+          ))}
         </div>
       </div>
     </article>
   );
 }
 
-function LinkCard({ href, label, language = "vi" }) {
+function LinkCard({ href, label, language = "vi", icon = null }) {
   if (!href) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-400">
@@ -1300,8 +1363,9 @@ function LinkCard({ href, label, language = "vi" }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-600"
+      className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-600"
     >
+      {icon}
       {label}
     </a>
   );
@@ -1322,6 +1386,30 @@ function ExternalLink({ href, label }) {
       {label}
     </a>
   );
+}
+
+function buildProjectRepositoryLinks(project, language = "vi") {
+  const repositoryLinks = [project?.githubLink, project?.githubLinkSecondary].filter(Boolean);
+
+  if (repositoryLinks.length === 0) {
+    return [];
+  }
+
+  if (repositoryLinks.length === 1) {
+    return [
+      {
+        href: repositoryLinks[0],
+        label: getLocalizedValue(uiText.viewRepository, language),
+        shortLabel: "GitHub"
+      }
+    ];
+  }
+
+  return repositoryLinks.map((href, index) => ({
+    href,
+    label: getLocalizedValue(index === 0 ? uiText.viewRepositoryPrimary : uiText.viewRepositorySecondary, language),
+    shortLabel: `GitHub ${index + 1}`
+  }));
 }
 
 function InfoCard({ message, tone = "default", className = "" }) {
@@ -1366,6 +1454,14 @@ function CheckIcon({ className }) {
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
+function GitHubIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2C6.48 2 2 6.59 2 12.25c0 4.53 2.87 8.37 6.84 9.72.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.21-3.37-1.21-.46-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.67.35-1.12.64-1.38-2.22-.26-4.55-1.14-4.55-5.09 0-1.12.39-2.03 1.03-2.74-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.82c.85 0 1.71.12 2.51.35 1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.71 1.03 1.62 1.03 2.74 0 3.96-2.34 4.82-4.57 5.08.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .27.18.59.69.49A10.27 10.27 0 0 0 22 12.25C22 6.59 17.52 2 12 2Z" />
     </svg>
   );
 }

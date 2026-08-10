@@ -65,6 +65,10 @@ export function createContact(payload) {
   });
 }
 
+export function getContactStats() {
+  return request("/contacts/stats");
+}
+
 export function loginAdmin(payload) {
   return request("/auth/login", {
     method: "POST",

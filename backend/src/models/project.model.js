@@ -52,6 +52,11 @@ const projectSchema = new mongoose.Schema(
       trim: true,
       default: ""
     },
+    githubLinkSecondary: {
+      type: String,
+      trim: true,
+      default: ""
+    },
     demoLink: {
       type: String,
       trim: true,

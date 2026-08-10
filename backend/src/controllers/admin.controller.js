@@ -49,6 +49,8 @@ function normalizeProjectPayload(body, currentProject = null) {
     myRole: body.myRole ? toLocalizedValue(body.myRole) : "",
     technologies,
     githubLink: typeof body.githubLink === "string" ? body.githubLink.trim() : "",
+    githubLinkSecondary:
+      typeof body.githubLinkSecondary === "string" ? body.githubLinkSecondary.trim() : "",
     demoLink: typeof body.demoLink === "string" ? body.demoLink.trim() : "",
     image: typeof body.image === "string" ? body.image.trim() : currentProject?.image || "",
     imagePublicId:

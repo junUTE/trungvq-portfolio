@@ -33,14 +33,13 @@ const emptyProjectForm = {
   slug: "",
   summaryVi: "",
   summaryEn: "",
-  descriptionVi: "",
-  descriptionEn: "",
   contentVi: "",
   contentEn: "",
   myRoleVi: "",
   myRoleEn: "",
   technologies: "",
   githubLink: "",
+  githubLinkSecondary: "",
   demoLink: "",
   image: "",
   imagePublicId: "",
@@ -139,14 +138,13 @@ function toProjectForm(project) {
     slug: project.slug || "",
     summaryVi: getLocalizedFormValue(project.summary, "vi"),
     summaryEn: getLocalizedFormValue(project.summary, "en"),
-    descriptionVi: getLocalizedFormValue(project.description, "vi"),
-    descriptionEn: getLocalizedFormValue(project.description, "en"),
     contentVi: getLocalizedFormValue(project.content, "vi"),
     contentEn: getLocalizedFormValue(project.content, "en"),
     myRoleVi: getLocalizedFormValue(project.myRole, "vi"),
     myRoleEn: getLocalizedFormValue(project.myRole, "en"),
     technologies: Array.isArray(project.technologies) ? project.technologies.join("\n") : "",
     githubLink: project.githubLink || "",
+    githubLinkSecondary: project.githubLinkSecondary || "",
     demoLink: project.demoLink || "",
     image: project.image || "",
     imagePublicId: project.imagePublicId || "",
@@ -161,7 +159,7 @@ function toProjectPayload(form) {
     title: toLocalizedPayload(form.titleVi, form.titleEn),
     slug: form.slug,
     summary: toLocalizedPayload(form.summaryVi, form.summaryEn),
-    description: toLocalizedPayload(form.descriptionVi, form.descriptionEn),
+    description: toLocalizedPayload(form.summaryVi, form.summaryEn),
     content: toLocalizedPayload(form.contentVi, form.contentEn),
     myRole: toLocalizedPayload(form.myRoleVi, form.myRoleEn),
     technologies: form.technologies
@@ -169,6 +167,7 @@ function toProjectPayload(form) {
       .map((item) => item.trim())
       .filter(Boolean),
     githubLink: form.githubLink,
+    githubLinkSecondary: form.githubLinkSecondary,
     demoLink: form.demoLink,
     image: form.image,
     imagePublicId: form.imagePublicId,
@@ -270,6 +269,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
   const [projectForm, setProjectForm] = useState(emptyProjectForm);
   const [assetForm, setAssetForm] = useState(emptyAssetForm);
   const [projectAssetFile, setProjectAssetFile] = useState(null);
+  const [projectAssetPreviewUrl, setProjectAssetPreviewUrl] = useState("");
   const [avatarForm, setAvatarForm] = useState({
     url: user?.avatar || "",
     publicId: user?.avatarPublicId || ""
@@ -291,6 +291,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
   const [selectedWorkItemId, setSelectedWorkItemId] = useState("");
   const [selectedCodeItemId, setSelectedCodeItemId] = useState("");
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     let active = true;
@@ -344,6 +345,20 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
     });
   }, [user?.avatar, user?.avatarPublicId]);
 
+  useEffect(() => {
+    if (!projectAssetFile) {
+      setProjectAssetPreviewUrl("");
+      return undefined;
+    }
+
+    const nextObjectUrl = URL.createObjectURL(projectAssetFile);
+    setProjectAssetPreviewUrl(nextObjectUrl);
+
+    return () => {
+      URL.revokeObjectURL(nextObjectUrl);
+    };
+  }, [projectAssetFile]);
+
   const metrics = useMemo(
     () => [
       { label: "Authentication", value: "JWT active", helper: "Bearer token + server guard" },
@@ -354,6 +369,14 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
     ],
     [codeItems.length, contacts, projects.length, user?.lastLogin]
   );
+
+  const dashboardTabs = [
+    { id: "overview", label: "Overview", helper: "Metrics and shortcuts" },
+    { id: "projects", label: "Projects", helper: "Portfolio items and assets" },
+    { id: "contacts", label: "Inbox", helper: "Messages in table view" },
+    { id: "profile", label: "Profile", helper: "Admin and public profile" },
+    { id: "content", label: "Content", helper: "Articles, work, code" }
+  ];
 
   async function handleLogout() {
     setStatus("submitting");
@@ -445,15 +468,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
     setProjectFeedback("");
 
     try {
-      const payload = await uploadProjectImageAsset(
-        projectAssetFile
-          ? {
-              file: await readFileAsDataUrl(projectAssetFile),
-              fileName: projectAssetFile.name,
-              folder: "portfolio/projects"
-            }
-          : assetForm
-      );
+      const payload = await uploadProjectAsset();
 
       setProjectForm((current) => ({
         ...current,
@@ -469,6 +484,18 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
     } catch (uploadError) {
       setProjectFeedback(extractErrorMessage(uploadError));
     }
+  }
+
+  async function uploadProjectAsset() {
+    return uploadProjectImageAsset(
+      projectAssetFile
+        ? {
+            file: await readFileAsDataUrl(projectAssetFile),
+            fileName: projectAssetFile.name,
+            folder: "portfolio/projects"
+          }
+        : assetForm
+    );
   }
 
   async function handleAvatarSubmit(event) {
@@ -510,9 +537,26 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
     setProjectFeedback("");
 
     try {
+      let nextProjectForm = projectForm;
+
+      if (projectAssetFile) {
+        const assetPayload = await uploadProjectAsset();
+        nextProjectForm = {
+          ...projectForm,
+          image: assetPayload.data.url,
+          imagePublicId: assetPayload.data.publicId
+        };
+        setProjectForm(nextProjectForm);
+        setAssetForm({
+          url: assetPayload.data.url,
+          publicId: assetPayload.data.publicId
+        });
+        setProjectAssetFile(null);
+      }
+
       const payload = selectedProjectId
-        ? await updateAdminProject(selectedProjectId, toProjectPayload(projectForm))
-        : await createAdminProject(toProjectPayload(projectForm));
+        ? await updateAdminProject(selectedProjectId, toProjectPayload(nextProjectForm))
+        : await createAdminProject(toProjectPayload(nextProjectForm));
 
       const savedProject = payload.data;
 
@@ -750,22 +794,22 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-8 sm:py-10">
+    <div className="min-h-screen bg-transparent px-4 py-8 text-slate-800 sm:px-8 sm:py-10">
       <section className="mx-auto max-w-7xl">
-        <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,_rgba(15,23,42,0.96),_rgba(8,47,73,0.96))] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.45)] sm:p-10">
+        <div className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,_rgba(255,255,255,0.94),_rgba(240,249,255,0.96))] p-8 shadow-[0_24px_70px_rgba(148,163,184,0.2)] sm:p-10">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.28em] text-sky-300">Admin Dashboard</p>
-              <h1 className="mt-4 text-4xl font-light text-white sm:text-5xl">Welcome back, {user?.username}</h1>
-              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
-                Manage projects, contacts, articles, work items, and media assets from one place without editing source code manually.
+              <p className="text-sm uppercase tracking-[0.28em] text-sky-600">Admin Dashboard</p>
+              <h1 className="mt-4 text-4xl font-light text-slate-900 sm:text-5xl">Welcome back, {user?.username}</h1>
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
+                Chuyển giữa từng khu vực theo chủ đề để quản lý portfolio, inbox và nội dung mà không cần cuộn qua một trang dài.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
               <Link
                 to="/"
-                className="inline-flex items-center rounded-full border border-white/15 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-100"
+                className="inline-flex items-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-700"
               >
                 View public site
               </Link>
@@ -773,7 +817,7 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                 type="button"
                 onClick={handleLogout}
                 disabled={status === "submitting"}
-                className="inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {status === "submitting" ? "Logging out..." : "Logout"}
               </button>
@@ -782,229 +826,395 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
 
           {error ? <InfoCard className="mt-6" tone="error" message={error} /> : null}
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {metrics.map((metric) => (
-              <article key={metric.label} className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <article key={metric.label} className="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{metric.label}</p>
-                <p className="mt-4 text-2xl font-light text-white">{metric.value}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-300">{metric.helper}</p>
+                <p className="mt-4 text-2xl font-light text-slate-900">{metric.value}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-500">{metric.helper}</p>
               </article>
+            ))}
+          </div>
+
+          <div className="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {dashboardTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`rounded-3xl border px-5 py-4 text-left transition ${
+                  activeTab === tab.id
+                    ? "border-sky-400 bg-sky-50 shadow-sm"
+                    : "border-slate-200 bg-white/80 hover:border-slate-300 hover:bg-white"
+                }`}
+              >
+                <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">{tab.label}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{tab.helper}</p>
+              </button>
             ))}
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-[2rem] border border-slate-800 bg-slate-900/80 p-8">
+        {activeTab === "overview" ? (
+          <div className="mt-8 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+              <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Quick status</p>
+              <h2 className="mt-3 text-3xl font-light text-slate-900">What needs attention today</h2>
+
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                <article className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Inbox</p>
+                  <p className="mt-3 text-2xl font-light text-slate-900">
+                    {contacts.filter((item) => item.status !== "replied").length}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">Tin nhắn chưa phản hồi đang chờ xử lý trong tab Inbox.</p>
+                </article>
+                <article className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Projects</p>
+                  <p className="mt-3 text-2xl font-light text-slate-900">
+                    {projects.filter((item) => item.status === "published").length}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">Dự án đã publish và đang hiển thị ngoài trang public.</p>
+                </article>
+                <article className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Content</p>
+                  <p className="mt-3 text-2xl font-light text-slate-900">
+                    {articles.length + workItems.length + codeItems.length}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">Tổng số bài viết, work item và repository đang được quản lý.</p>
+                </article>
+                <article className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Profile</p>
+                  <p className="mt-3 text-lg font-medium text-slate-900">{profileForm.displayName || user?.username}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">Avatar, hero copy và social links nằm trong tab Profile.</p>
+                </article>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+              <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Recent inbox</p>
+              <h2 className="mt-3 text-3xl font-light text-slate-900">Latest messages</h2>
+
+              <div className="mt-6 space-y-4">
+                {contacts.slice(0, 4).map((contact) => (
+                  <article key={contact._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-medium text-slate-900">{contact.name}</h3>
+                          <StatusBadge value={contact.status} />
+                        </div>
+                        <p className="mt-2 text-sm text-slate-500">{contact.email}</p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">{truncateText(contact.message, 120)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("contacts")}
+                        className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
+                      >
+                        Open inbox
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </div>
+        ) : null}
+
+        {activeTab === "projects" ? (
+          <div className="mt-8 grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Project editor</p>
+                  <h2 className="mt-3 text-3xl font-light text-slate-900">
+                    {selectedProjectId ? "Update project" : "Create new project"}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleProjectReset}
+                  className="rounded-full border border-slate-300 px-4 py-2 text-sm uppercase tracking-[0.18em] text-slate-700"
+                >
+                  Reset form
+                </button>
+              </div>
+
+              <form onSubmit={handleProjectAssetSubmit} className="mt-8 grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-sm uppercase tracking-[0.24em] text-sky-600">Project image asset</p>
+                {projectAssetFile ? (
+                  <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
+                    <div className="aspect-[16/9] bg-slate-100">
+                      <img
+                        src={projectAssetPreviewUrl}
+                        alt="Selected project asset preview"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                      <p className="text-sm text-slate-500">Preview ảnh mới trước khi upload vào project.</p>
+                      <button
+                        type="button"
+                        onClick={() => setProjectAssetFile(null)}
+                        className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
+                      >
+                        Clear selection
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {(projectForm.image || assetForm.url) && !projectAssetFile ? (
+                  <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
+                    <div className="aspect-[16/9] bg-slate-100">
+                      <img
+                        src={projectForm.image || assetForm.url}
+                        alt="Current project asset"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                      <p className="text-sm text-slate-500">Ảnh hiện tại của project đang được dùng trên site.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProjectForm((current) => ({
+                            ...current,
+                            image: "",
+                            imagePublicId: ""
+                          }));
+                          setAssetForm(emptyAssetForm);
+                          setProjectFeedback("Image cleared. Save project or upload a new file to apply the change.");
+                        }}
+                        className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
+                      >
+                        Remove image
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                <label className="grid gap-2">
+                  <span className="text-sm text-slate-700">Choose image file</span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleProjectAssetFileChange}
+                    className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+                  />
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="submit"
+                    className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
+                  >
+                    {projectAssetFile ? "Upload image now" : "Keep current image"}
+                  </button>
+                </div>
+              </form>
+
+              <form onSubmit={handleProjectSubmit} className="mt-6 grid gap-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Field label="Title (VI)">
+                    <input name="titleVi" value={projectForm.titleVi} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                  </Field>
+                  <Field label="Title (EN)">
+                    <input name="titleEn" value={projectForm.titleEn} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                  </Field>
+                  <Field label="Slug">
+                    <input name="slug" value={projectForm.slug} onChange={handleProjectFieldChange} className={fieldClassName} />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Summary (VI)">
+                    <textarea name="summaryVi" rows="3" value={projectForm.summaryVi} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                  </Field>
+                  <Field label="Summary (EN)">
+                    <textarea name="summaryEn" rows="3" value={projectForm.summaryEn} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Content (VI)">
+                    <textarea name="contentVi" rows="6" value={projectForm.contentVi} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                  </Field>
+                  <Field label="Content (EN)">
+                    <textarea name="contentEn" rows="6" value={projectForm.contentEn} onChange={handleProjectFieldChange} required className={fieldClassName} />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="My role (VI)">
+                    <textarea name="myRoleVi" rows="4" value={projectForm.myRoleVi} onChange={handleProjectFieldChange} className={fieldClassName} />
+                  </Field>
+                  <Field label="My role (EN)">
+                    <textarea name="myRoleEn" rows="4" value={projectForm.myRoleEn} onChange={handleProjectFieldChange} className={fieldClassName} />
+                  </Field>
+                </div>
+
+                <Field label="Technologies (one per line)">
+                  <textarea name="technologies" rows="5" value={projectForm.technologies} onChange={handleProjectFieldChange} className={fieldClassName} placeholder={"React\nNode.js\nMongoDB"} />
+                </Field>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Repository URL 1">
+                    <input name="githubLink" value={projectForm.githubLink} onChange={handleProjectFieldChange} className={fieldClassName} />
+                  </Field>
+                  <Field label="Repository URL 2">
+                    <input name="githubLinkSecondary" value={projectForm.githubLinkSecondary} onChange={handleProjectFieldChange} className={fieldClassName} />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Demo URL">
+                    <input name="demoLink" value={projectForm.demoLink} onChange={handleProjectFieldChange} className={fieldClassName} />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Field label="Status">
+                    <select name="status" value={projectForm.status} onChange={handleProjectFieldChange} className={fieldClassName}>
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </Field>
+                  <Field label="Order">
+                    <input name="order" type="number" value={projectForm.order} onChange={handleProjectFieldChange} className={fieldClassName} />
+                  </Field>
+                  <label className="flex items-center gap-3 rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    <input name="featured" type="checkbox" checked={projectForm.featured} onChange={handleProjectFieldChange} className="h-4 w-4 rounded border-slate-300" />
+                    Featured project
+                  </label>
+                </div>
+
+                {projectFeedback ? <InfoCard tone={projectFeedback.includes("success") ? "success" : "default"} message={projectFeedback} /> : null}
+
+                <button type="submit" className="w-fit rounded-full bg-slate-900 px-6 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white">
+                  {selectedProjectId ? "Update project" : "Create project"}
+                </button>
+              </form>
+            </section>
+
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Project list</p>
+                  <h2 className="mt-3 text-3xl font-light text-slate-900">All projects</h2>
+                </div>
+                <p className="text-sm uppercase tracking-[0.22em] text-slate-400">{projects.length} items</p>
+              </div>
+
+              {loadingProjects ? <InfoCard className="mt-6" message="Loading projects..." /> : null}
+
+              {!loadingProjects ? (
+                <div className="mt-6 space-y-4">
+                  {[...projects].sort(sortProjects).map((project) => (
+                    <article key={project._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(project.title, "vi")}</h3>
+                            <StatusBadge value={project.status} />
+                            {project.featured ? <StatusBadge value="featured" /> : null}
+                          </div>
+                          <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(project.summary, "vi")}</p>
+                          <p className="mt-3 text-xs uppercase tracking-[0.22em] text-slate-400">{project.slug} · order {project.order || 0}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => handleProjectEdit(project)} className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white">
+                            Edit
+                          </button>
+                          <button type="button" onClick={() => handleProjectDelete(project._id)} className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600">
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          </div>
+        ) : null}
+
+        {activeTab === "contacts" ? (
+          <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Project editor</p>
-                <h2 className="mt-3 text-3xl font-light text-white">
-                  {selectedProjectId ? "Update project" : "Create new project"}
-                </h2>
+                <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Contact management</p>
+                <h2 className="mt-3 text-3xl font-light text-slate-900">Inbox table</h2>
               </div>
-              <button
-                type="button"
-                onClick={handleProjectReset}
-                className="rounded-full border border-white/15 px-4 py-2 text-sm uppercase tracking-[0.18em] text-slate-200"
-              >
-                Reset form
-              </button>
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-400">{contacts.length} messages</p>
             </div>
 
-            <form onSubmit={handleProjectAssetSubmit} className="mt-8 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5">
-              <p className="text-sm uppercase tracking-[0.24em] text-sky-300">Project image asset</p>
-              <label className="grid gap-2">
-                <span className="text-sm text-slate-300">Upload image file</span>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/webp"
-                  onChange={handleProjectAssetFileChange}
-                  className="rounded-2xl border border-dashed border-white/15 bg-slate-950/40 px-4 py-3 text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-sky-500 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-950"
-                />
-              </label>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2">
-                  <span className="text-sm text-slate-300">Existing Image URL</span>
-                  <input
-                    name="url"
-                    value={assetForm.url}
-                    onChange={handleAssetFieldChange}
-                    className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-400"
-                    placeholder="https://..."
-                  />
-                </label>
-                <label className="grid gap-2">
-                  <span className="text-sm text-slate-300">Existing Public ID</span>
-                  <input
-                    name="publicId"
-                    value={assetForm.publicId}
-                    onChange={handleAssetFieldChange}
-                    className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-400"
-                    placeholder="portfolio/projects/project-name"
-                  />
-                </label>
+            {contactFeedback ? <InfoCard className="mt-6" message={contactFeedback} /> : null}
+            {loadingContacts ? <InfoCard className="mt-6" message="Loading contacts..." /> : null}
+
+            {!loadingContacts ? (
+              <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-collapse bg-white">
+                    <thead className="bg-slate-50">
+                      <tr className="text-left">
+                        <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sender</th>
+                        <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Message</th>
+                        <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Status</th>
+                        <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Received</th>
+                        <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {contacts.map((contact, index) => (
+                        <tr key={contact._id} className={index !== contacts.length - 1 ? "border-t border-slate-200" : ""}>
+                          <td className="px-5 py-4 align-top">
+                            <p className="font-medium text-slate-900">{contact.name}</p>
+                            <a href={`mailto:${contact.email}`} className="mt-1 inline-flex text-sm text-sky-600 hover:opacity-70">
+                              {contact.email}
+                            </a>
+                          </td>
+                          <td className="max-w-[420px] px-5 py-4 align-top text-sm leading-6 text-slate-600">
+                            {truncateText(contact.message, 180)}
+                          </td>
+                          <td className="px-5 py-4 align-top">
+                            <StatusBadge value={contact.status} />
+                          </td>
+                          <td className="px-5 py-4 align-top text-sm leading-6 text-slate-500">
+                            <p>{formatAdminDate(contact.createdAt)}</p>
+                            {contact.repliedAt ? <p className="mt-1">Replied {formatAdminDate(contact.repliedAt)}</p> : null}
+                          </td>
+                          <td className="px-5 py-4 align-top">
+                            <div className="flex min-w-[180px] flex-col gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleContactStatusChange(contact._id, "replied")}
+                                disabled={contact.status === "replied"}
+                                className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                Mark replied
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleContactStatusChange(contact._id, "unread")}
+                                disabled={contact.status === "unread"}
+                                className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                Mark unread
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <button
-                type="submit"
-                className="w-fit rounded-full bg-sky-500 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-950"
-              >
-                {projectAssetFile ? "Upload project image" : "Save existing image asset"}
-              </button>
-            </form>
-
-            <form onSubmit={handleProjectSubmit} className="mt-6 grid gap-4">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Field label="Title (VI)" labelClassName="text-sm font-medium text-slate-700">
-                  <input name="titleVi" value={projectForm.titleVi} onChange={handleProjectFieldChange} required className={fieldClassName} />
-                </Field>
-                <Field label="Title (EN)" labelClassName="text-sm font-medium text-slate-700">
-                  <input name="titleEn" value={projectForm.titleEn} onChange={handleProjectFieldChange} required className={fieldClassName} />
-                </Field>
-                <Field label="Slug">
-                  <input name="slug" value={projectForm.slug} onChange={handleProjectFieldChange} className={fieldClassName} />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Summary (VI)">
-                  <textarea name="summaryVi" rows="3" value={projectForm.summaryVi} onChange={handleProjectFieldChange} required className={fieldClassName} />
-                </Field>
-                <Field label="Summary (EN)">
-                  <textarea name="summaryEn" rows="3" value={projectForm.summaryEn} onChange={handleProjectFieldChange} required className={fieldClassName} />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Description (VI)">
-                  <textarea
-                    name="descriptionVi"
-                    rows="4"
-                    value={projectForm.descriptionVi}
-                    onChange={handleProjectFieldChange}
-                    required
-                    className={fieldClassName}
-                  />
-                </Field>
-                <Field label="Description (EN)">
-                  <textarea
-                    name="descriptionEn"
-                    rows="4"
-                    value={projectForm.descriptionEn}
-                    onChange={handleProjectFieldChange}
-                    required
-                    className={fieldClassName}
-                  />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Content (VI)">
-                  <textarea
-                    name="contentVi"
-                    rows="6"
-                    value={projectForm.contentVi}
-                    onChange={handleProjectFieldChange}
-                    required
-                    className={fieldClassName}
-                  />
-                </Field>
-                <Field label="Content (EN)">
-                  <textarea
-                    name="contentEn"
-                    rows="6"
-                    value={projectForm.contentEn}
-                    onChange={handleProjectFieldChange}
-                    required
-                    className={fieldClassName}
-                  />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="My role (VI)">
-                  <textarea
-                    name="myRoleVi"
-                    rows="4"
-                    value={projectForm.myRoleVi}
-                    onChange={handleProjectFieldChange}
-                    className={fieldClassName}
-                  />
-                </Field>
-                <Field label="My role (EN)">
-                  <textarea
-                    name="myRoleEn"
-                    rows="4"
-                    value={projectForm.myRoleEn}
-                    onChange={handleProjectFieldChange}
-                    className={fieldClassName}
-                  />
-                </Field>
-              </div>
-
-              <Field label="Technologies (one per line)">
-                <textarea
-                  name="technologies"
-                  rows="5"
-                  value={projectForm.technologies}
-                  onChange={handleProjectFieldChange}
-                  className={fieldClassName}
-                  placeholder={"React\nNode.js\nMongoDB"}
-                />
-              </Field>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="GitHub URL">
-                  <input name="githubLink" value={projectForm.githubLink} onChange={handleProjectFieldChange} className={fieldClassName} />
-                </Field>
-                <Field label="Demo URL">
-                  <input name="demoLink" value={projectForm.demoLink} onChange={handleProjectFieldChange} className={fieldClassName} />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Image URL">
-                  <input name="image" value={projectForm.image} onChange={handleProjectFieldChange} className={fieldClassName} />
-                </Field>
-                <Field label="Image Public ID">
-                  <input name="imagePublicId" value={projectForm.imagePublicId} onChange={handleProjectFieldChange} className={fieldClassName} />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <Field label="Status">
-                  <select name="status" value={projectForm.status} onChange={handleProjectFieldChange} className={fieldClassName}>
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                  </select>
-                </Field>
-                <Field label="Order">
-                  <input name="order" type="number" value={projectForm.order} onChange={handleProjectFieldChange} className={fieldClassName} />
-                </Field>
-                <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  <input
-                    name="featured"
-                    type="checkbox"
-                    checked={projectForm.featured}
-                    onChange={handleProjectFieldChange}
-                    className="h-4 w-4 rounded border-white/20 bg-slate-950/60"
-                  />
-                  Featured project
-                </label>
-              </div>
-
-              {projectFeedback ? <InfoCard tone={projectFeedback.includes("success") ? "success" : "default"} message={projectFeedback} /> : null}
-
-              <button
-                type="submit"
-                className="w-fit rounded-full bg-white px-6 py-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-900"
-              >
-                {selectedProjectId ? "Update project" : "Create project"}
-              </button>
-            </form>
+            ) : null}
           </section>
+        ) : null}
 
-          <section className="grid gap-6">
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
+        {activeTab === "profile" ? (
+          <div className="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
               <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Admin profile</p>
               <div className="mt-6 flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-slate-100">
@@ -1037,582 +1247,315 @@ export default function AdminDashboard({ user, onLogout, onUserChange, onPublicP
                   <input name="publicId" value={avatarForm.publicId} onChange={handleAvatarFieldChange} className={lightFieldClassName} />
                 </Field>
                 {profileFeedback ? <InfoCard message={profileFeedback} /> : null}
-                <button
-                  type="submit"
-                  className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
-                >
+                <button type="submit" className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white">
                   Save avatar
                 </button>
               </form>
             </section>
 
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Project list</p>
-                  <h2 className="mt-3 text-3xl font-light text-slate-900">All projects</h2>
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+              <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Profile content</p>
+              <h2 className="mt-3 text-3xl font-light text-slate-900">Public profile settings</h2>
+
+              <form onSubmit={handleProfileSubmit} className="mt-6 grid gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Display name">
+                    <input name="displayName" value={profileForm.displayName} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Brand initials">
+                    <input name="brandInitials" value={profileForm.brandInitials} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                  </Field>
                 </div>
-                <p className="text-sm uppercase tracking-[0.22em] text-slate-400">{projects.length} items</p>
-              </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Hero title (VI)">
+                    <input name="heroTitleVi" value={profileForm.heroTitleVi} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Hero title (EN)">
+                    <input name="heroTitleEn" value={profileForm.heroTitleEn} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <Field label="Intro segments JSON">
+                  <textarea name="introSegmentsJson" rows="10" value={profileForm.introSegmentsJson} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                </Field>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Goal description (VI)">
+                    <textarea name="goalDescriptionVi" rows="4" value={profileForm.goalDescriptionVi} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                  </Field>
+                  <Field label="Goal description (EN)">
+                    <textarea name="goalDescriptionEn" rows="4" value={profileForm.goalDescriptionEn} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                  </Field>
+                </div>
+                <Field label="GitHub URL">
+                  <input name="githubUrl" value={profileForm.githubUrl} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                </Field>
+                <Field label="LinkedIn URL">
+                  <input name="linkedinUrl" value={profileForm.linkedinUrl} onChange={handleProfileFieldChange} className={lightFieldClassName} />
+                </Field>
+                {contentFeedback ? <InfoCard message={contentFeedback} /> : null}
+                <button type="submit" className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white">
+                  Save profile content
+                </button>
+              </form>
+            </section>
+          </div>
+        ) : null}
 
-              {loadingProjects ? <InfoCard className="mt-6" message="Loading projects..." /> : null}
+        {activeTab === "content" ? (
+          <div className="mt-8 space-y-6">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800 shadow-sm">
+              <div className="grid gap-6 2xl:grid-cols-2">
+                <div>
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Articles</p>
+                      <h2 className="mt-3 text-3xl font-light text-slate-900">Manage articles</h2>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedArticleId("");
+                        setArticleForm(emptyArticleForm);
+                      }}
+                      className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
+                    >
+                      New article
+                    </button>
+                  </div>
 
-              {!loadingProjects ? (
-                <div className="mt-6 space-y-4">
-                  {[...projects].sort(sortProjects).map((project) => (
-                    <article key={project._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <form onSubmit={handleArticleSubmit} className="mt-6 grid gap-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Title (VI)"><input name="titleVi" value={articleForm.titleVi} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Title (EN)"><input name="titleEn" value={articleForm.titleEn} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <Field label="Slug"><input name="slug" value={articleForm.slug} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Category (VI)"><input name="categoryVi" value={articleForm.categoryVi} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Category (EN)"><input name="categoryEn" value={articleForm.categoryEn} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Read time (VI)"><input name="readTimeVi" value={articleForm.readTimeVi} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Read time (EN)"><input name="readTimeEn" value={articleForm.readTimeEn} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Excerpt (VI)"><textarea name="excerptVi" rows="4" value={articleForm.excerptVi} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Excerpt (EN)"><textarea name="excerptEn" rows="4" value={articleForm.excerptEn} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Tone"><input name="tone" value={articleForm.tone} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Published at"><input name="publishedAt" type="date" value={articleForm.publishedAt} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Order"><input name="order" type="number" value={articleForm.order} onChange={handleArticleFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <Field label="Status">
+                      <select name="status" value={articleForm.status} onChange={handleArticleFieldChange} className={lightFieldClassName}>
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                      </select>
+                    </Field>
+                    <button type="submit" className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white">
+                      {selectedArticleId ? "Update article" : "Create article"}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="space-y-4">
+                  {[...articles].sort(sortContentByOrderAndDate).map((article) => (
+                    <article key={article._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                      <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(project.title, "vi")}</h3>
-                            <StatusBadge value={project.status} />
-                            {project.featured ? <StatusBadge value="featured" /> : null}
-                          </div>
-                          <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(project.summary, "vi")}</p>
-                          <p className="mt-3 text-xs uppercase tracking-[0.22em] text-slate-400">
-                            {project.slug} · order {project.order || 0}
-                          </p>
+                          <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(article.title, "vi")}</h3>
+                          <p className="mt-2 text-sm text-slate-500">{getLocalizedFormValue(article.category, "vi")} · {getLocalizedFormValue(article.readTime, "vi")}</p>
+                          <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(article.excerpt, "vi")}</p>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleProjectEdit(project)}
-                            className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleProjectDelete(project._id)}
-                            className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                        <StatusBadge value={article.status} />
+                      </div>
+                      <div className="mt-4 flex gap-2">
+                        <button type="button" onClick={() => { setSelectedArticleId(article._id); setArticleForm(toArticleForm(article)); }} className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white">
+                          Edit
+                        </button>
+                        <button type="button" onClick={() => handleArticleDelete(article._id)} className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600">
+                          Delete
+                        </button>
                       </div>
                     </article>
                   ))}
                 </div>
-              ) : null}
+              </div>
             </section>
-          </section>
-        </div>
 
-        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Contact management</p>
-              <h2 className="mt-3 text-3xl font-light text-slate-900">Inbox</h2>
-            </div>
-            <p className="text-sm uppercase tracking-[0.22em] text-slate-400">{contacts.length} messages</p>
-          </div>
-
-          {contactFeedback ? <InfoCard className="mt-6" message={contactFeedback} /> : null}
-          {loadingContacts ? <InfoCard className="mt-6" message="Loading contacts..." /> : null}
-
-          {!loadingContacts ? (
-            <div className="mt-6 grid gap-4">
-              {contacts.map((contact) => (
-                <article key={contact._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="max-w-3xl">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="text-lg font-medium text-slate-900">{contact.name}</h3>
-                        <StatusBadge value={contact.status} />
-                        <span className="text-sm text-slate-500">{contact.email}</span>
-                      </div>
-                      <p className="mt-4 text-base leading-7 text-slate-600">{contact.message}</p>
-                      <p className="mt-4 text-xs uppercase tracking-[0.22em] text-slate-400">
-                        Received {formatAdminDate(contact.createdAt)}
-                        {contact.repliedAt ? ` · replied ${formatAdminDate(contact.repliedAt)}` : ""}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleContactStatusChange(contact._id, "replied")}
-                        disabled={contact.status === "replied"}
-                        className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Mark replied
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleContactStatusChange(contact._id, "unread")}
-                        disabled={contact.status === "unread"}
-                        className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Mark unread
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : null}
-        </section>
-
-        <section className="mt-8 grid gap-6 xl:grid-cols-3">
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800 xl:col-span-1">
-            <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Profile content</p>
-            <h2 className="mt-3 text-3xl font-light text-slate-900">Profile settings</h2>
-
-            <form onSubmit={handleProfileSubmit} className="mt-6 grid gap-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Display name" labelClassName="text-sm font-medium text-slate-700">
-                  <input name="displayName" value={profileForm.displayName} onChange={handleProfileFieldChange} className={lightFieldClassName} />
-                </Field>
-                <Field label="Brand initials" labelClassName="text-sm font-medium text-slate-700">
-                  <input name="brandInitials" value={profileForm.brandInitials} onChange={handleProfileFieldChange} className={lightFieldClassName} />
-                </Field>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Hero title (VI)" labelClassName="text-sm font-medium text-slate-700">
-                  <input name="heroTitleVi" value={profileForm.heroTitleVi} onChange={handleProfileFieldChange} className={lightFieldClassName} />
-                </Field>
-                <Field label="Hero title (EN)" labelClassName="text-sm font-medium text-slate-700">
-                  <input name="heroTitleEn" value={profileForm.heroTitleEn} onChange={handleProfileFieldChange} className={lightFieldClassName} />
-                </Field>
-              </div>
-              <Field label="Intro segments JSON" labelClassName="text-sm font-medium text-slate-700">
-                <textarea
-                  name="introSegmentsJson"
-                  rows="10"
-                  value={profileForm.introSegmentsJson}
-                  onChange={handleProfileFieldChange}
-                  className={lightFieldClassName}
-                />
-              </Field>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Goal description (VI)" labelClassName="text-sm font-medium text-slate-700">
-                  <textarea
-                    name="goalDescriptionVi"
-                    rows="4"
-                    value={profileForm.goalDescriptionVi}
-                    onChange={handleProfileFieldChange}
-                    className={lightFieldClassName}
-                  />
-                </Field>
-                <Field label="Goal description (EN)" labelClassName="text-sm font-medium text-slate-700">
-                  <textarea
-                    name="goalDescriptionEn"
-                    rows="4"
-                    value={profileForm.goalDescriptionEn}
-                    onChange={handleProfileFieldChange}
-                    className={lightFieldClassName}
-                  />
-                </Field>
-              </div>
-              <Field label="GitHub URL" labelClassName="text-sm font-medium text-slate-700">
-                <input name="githubUrl" value={profileForm.githubUrl} onChange={handleProfileFieldChange} className={lightFieldClassName} />
-              </Field>
-              <Field label="LinkedIn URL" labelClassName="text-sm font-medium text-slate-700">
-                <input name="linkedinUrl" value={profileForm.linkedinUrl} onChange={handleProfileFieldChange} className={lightFieldClassName} />
-              </Field>
-              {contentFeedback ? <InfoCard message={contentFeedback} /> : null}
-              <button
-                type="submit"
-                className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
-              >
-                Save profile content
-              </button>
-            </form>
-          </section>
-
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800 xl:col-span-2">
-            <div className="grid gap-6 2xl:grid-cols-2">
-              <div>
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Articles</p>
-                    <h2 className="mt-3 text-3xl font-light text-slate-900">Manage articles</h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedArticleId("");
-                      setArticleForm(emptyArticleForm);
-                    }}
-                    className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
-                  >
-                    New article
-                  </button>
-                </div>
-
-                <form onSubmit={handleArticleSubmit} className="mt-6 grid gap-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Title (VI)" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="titleVi" value={articleForm.titleVi} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                    <Field label="Title (EN)" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="titleEn" value={articleForm.titleEn} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                  </div>
-                  <Field label="Slug" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="slug" value={articleForm.slug} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                  </Field>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Category (VI)" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="categoryVi" value={articleForm.categoryVi} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                    <Field label="Category (EN)" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="categoryEn" value={articleForm.categoryEn} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Read time (VI)" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="readTimeVi" value={articleForm.readTimeVi} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                    <Field label="Read time (EN)" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="readTimeEn" value={articleForm.readTimeEn} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Excerpt (VI)" labelClassName="text-sm font-medium text-slate-700">
-                      <textarea name="excerptVi" rows="4" value={articleForm.excerptVi} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                    <Field label="Excerpt (EN)" labelClassName="text-sm font-medium text-slate-700">
-                      <textarea name="excerptEn" rows="4" value={articleForm.excerptEn} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Tone" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="tone" value={articleForm.tone} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                    <Field label="Published at" labelClassName="text-sm font-medium text-slate-700">
-                      <input
-                        name="publishedAt"
-                        type="date"
-                        value={articleForm.publishedAt}
-                        onChange={handleArticleFieldChange}
-                        className={lightFieldClassName}
-                      />
-                    </Field>
-                    <Field label="Order" labelClassName="text-sm font-medium text-slate-700">
-                      <input name="order" type="number" value={articleForm.order} onChange={handleArticleFieldChange} className={lightFieldClassName} />
-                    </Field>
-                  </div>
-                  <Field label="Status" labelClassName="text-sm font-medium text-slate-700">
-                    <select name="status" value={articleForm.status} onChange={handleArticleFieldChange} className={lightFieldClassName}>
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                    </select>
-                  </Field>
-                  <button
-                    type="submit"
-                    className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
-                  >
-                    {selectedArticleId ? "Update article" : "Create article"}
-                  </button>
-                </form>
-              </div>
-
-              <div className="space-y-4">
-                {[...articles].sort(sortContentByOrderAndDate).map((article) => (
-                  <article key={article._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(article.title, "vi")}</h3>
-                        <p className="mt-2 text-sm text-slate-500">
-                          {getLocalizedFormValue(article.category, "vi")} · {getLocalizedFormValue(article.readTime, "vi")}
-                        </p>
-                        <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(article.excerpt, "vi")}</p>
-                      </div>
-                      <StatusBadge value={article.status} />
-                    </div>
-                    <div className="mt-4 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedArticleId(article._id);
-                          setArticleForm(toArticleForm(article));
-                        }}
-                        className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleArticleDelete(article._id)}
-                        className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-        </section>
-
-        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
-          <div className="grid gap-6 xl:grid-cols-2">
-            <div>
-              <div className="flex items-end justify-between gap-4">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800 shadow-sm">
+              <div className="grid gap-6 xl:grid-cols-2">
                 <div>
-                  <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Work</p>
-                  <h2 className="mt-3 text-3xl font-light text-slate-900">Manage work items</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedWorkItemId("");
-                    setWorkForm(emptyWorkForm);
-                  }}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
-                >
-                  New work item
-                </button>
-              </div>
-
-              <form onSubmit={handleWorkSubmit} className="mt-6 grid gap-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Title (VI)" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="titleVi" value={workForm.titleVi} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                  <Field label="Title (EN)" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="titleEn" value={workForm.titleEn} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Company (VI)" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="companyVi" value={workForm.companyVi} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                  <Field label="Company (EN)" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="companyEn" value={workForm.companyEn} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Period (VI)" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="periodVi" value={workForm.periodVi} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                  <Field label="Period (EN)" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="periodEn" value={workForm.periodEn} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Summary (VI)" labelClassName="text-sm font-medium text-slate-700">
-                    <textarea name="summaryVi" rows="4" value={workForm.summaryVi} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                  <Field label="Summary (EN)" labelClassName="text-sm font-medium text-slate-700">
-                    <textarea name="summaryEn" rows="4" value={workForm.summaryEn} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Highlights (VI, one per line)" labelClassName="text-sm font-medium text-slate-700">
-                    <textarea
-                      name="highlightsVi"
-                      rows="5"
-                      value={workForm.highlightsVi}
-                      onChange={handleWorkFieldChange}
-                      className={lightFieldClassName}
-                    />
-                  </Field>
-                  <Field label="Highlights (EN, one per line)" labelClassName="text-sm font-medium text-slate-700">
-                    <textarea
-                      name="highlightsEn"
-                      rows="5"
-                      value={workForm.highlightsEn}
-                      onChange={handleWorkFieldChange}
-                      className={lightFieldClassName}
-                    />
-                  </Field>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Status" labelClassName="text-sm font-medium text-slate-700">
-                    <select name="status" value={workForm.status} onChange={handleWorkFieldChange} className={lightFieldClassName}>
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                    </select>
-                  </Field>
-                  <Field label="Order" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="order" type="number" value={workForm.order} onChange={handleWorkFieldChange} className={lightFieldClassName} />
-                  </Field>
-                </div>
-                <button
-                  type="submit"
-                  className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
-                >
-                  {selectedWorkItemId ? "Update work item" : "Create work item"}
-                </button>
-              </form>
-            </div>
-
-            <div className="space-y-4">
-              {[...workItems].sort(sortContentByOrderAndDate).map((item) => (
-                <article key={item._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-end justify-between gap-4">
                     <div>
-                      <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(item.title, "vi")}</h3>
-                      <p className="mt-2 text-sm text-slate-500">
-                        {[getLocalizedFormValue(item.company, "vi"), getLocalizedFormValue(item.period, "vi")].filter(Boolean).join(" · ")}
-                      </p>
-                      <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(item.summary, "vi")}</p>
+                      <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Work</p>
+                      <h2 className="mt-3 text-3xl font-light text-slate-900">Manage work items</h2>
                     </div>
-                    <StatusBadge value={item.status} />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {(item.highlights || []).map((highlight) => (
-                      <span key={highlight} className="rounded-full bg-white px-3 py-1 text-xs text-slate-500 ring-1 ring-slate-200">
-                        {getLocalizedFormValue(highlight, "vi")}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex gap-2">
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedWorkItemId(item._id);
-                        setWorkForm(toWorkForm(item));
+                        setSelectedWorkItemId("");
+                        setWorkForm(emptyWorkForm);
                       }}
-                      className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white"
+                      className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
                     >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleWorkDelete(item._id)}
-                      className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
-                    >
-                      Delete
+                      New work item
                     </button>
                   </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800">
-          <div className="grid gap-6 xl:grid-cols-2">
-            <div>
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Code</p>
-                  <h2 className="mt-3 text-3xl font-light text-slate-900">Manage code repositories</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCodeItemId("");
-                    setCodeForm(emptyCodeForm);
-                  }}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
-                >
-                  New code item
-                </button>
-              </div>
-
-              <form onSubmit={handleCodeSubmit} className="mt-6 grid gap-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Owner" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="owner" value={codeForm.owner} onChange={handleCodeFieldChange} className={lightFieldClassName} />
-                  </Field>
-                  <Field label="Repository name" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="name" value={codeForm.name} onChange={handleCodeFieldChange} className={lightFieldClassName} />
-                  </Field>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Summary (VI)" labelClassName="text-sm font-medium text-slate-700">
-                    <textarea name="summaryVi" rows="4" value={codeForm.summaryVi} onChange={handleCodeFieldChange} className={lightFieldClassName} />
-                  </Field>
-                  <Field label="Summary (EN)" labelClassName="text-sm font-medium text-slate-700">
-                    <textarea name="summaryEn" rows="4" value={codeForm.summaryEn} onChange={handleCodeFieldChange} className={lightFieldClassName} />
-                  </Field>
-                </div>
-                <Field label="Repository URL" labelClassName="text-sm font-medium text-slate-700">
-                  <input
-                    name="repositoryUrl"
-                    value={codeForm.repositoryUrl}
-                    onChange={handleCodeFieldChange}
-                    className={lightFieldClassName}
-                    placeholder="https://github.com/username/repository"
-                  />
-                </Field>
-                <Field label="Tags (one per line: vi|en|bg-color)" labelClassName="text-sm font-medium text-slate-700">
-                  <textarea
-                    name="tags"
-                    rows="6"
-                    value={codeForm.tags}
-                    onChange={handleCodeFieldChange}
-                    className={lightFieldClassName}
-                    placeholder={"React|React|bg-sky-500\nNút UI|UI Button|bg-emerald-500"}
-                  />
-                </Field>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Status" labelClassName="text-sm font-medium text-slate-700">
-                    <select name="status" value={codeForm.status} onChange={handleCodeFieldChange} className={lightFieldClassName}>
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                    </select>
-                  </Field>
-                  <Field label="Order" labelClassName="text-sm font-medium text-slate-700">
-                    <input name="order" type="number" value={codeForm.order} onChange={handleCodeFieldChange} className={lightFieldClassName} />
-                  </Field>
-                </div>
-                <button
-                  type="submit"
-                  className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white"
-                >
-                  {selectedCodeItemId ? "Update code item" : "Create code item"}
-                </button>
-              </form>
-            </div>
-
-            <div className="space-y-4">
-              {[...codeItems].sort(sortContentByOrderAndDate).map((item) => (
-                <article key={item._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-xl font-medium text-slate-900">
-                        {item.owner}/{item.name}
-                      </h3>
-                      <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(item.summary, "vi")}</p>
-                      <a
-                        href={item.repositoryUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-flex text-sm font-medium text-sky-600 transition hover:opacity-70"
-                      >
-                        {item.repositoryUrl}
-                      </a>
+                  <form onSubmit={handleWorkSubmit} className="mt-6 grid gap-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Title (VI)"><input name="titleVi" value={workForm.titleVi} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Title (EN)"><input name="titleEn" value={workForm.titleEn} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
                     </div>
-                    <StatusBadge value={item.status} />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {(item.tags || []).map((tag) => (
-                      <span key={`${item._id}-${getLocalizedFormValue(tag.label, "vi")}`} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200">
-                        <span className={`h-2.5 w-2.5 rounded-full ${tag.color || "bg-slate-500"}`}></span>
-                        {getLocalizedFormValue(tag.label, "vi")}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex gap-2">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Company (VI)"><input name="companyVi" value={workForm.companyVi} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Company (EN)"><input name="companyEn" value={workForm.companyEn} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Period (VI)"><input name="periodVi" value={workForm.periodVi} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Period (EN)"><input name="periodEn" value={workForm.periodEn} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Summary (VI)"><textarea name="summaryVi" rows="4" value={workForm.summaryVi} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Summary (EN)"><textarea name="summaryEn" rows="4" value={workForm.summaryEn} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Highlights (VI, one per line)"><textarea name="highlightsVi" rows="5" value={workForm.highlightsVi} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Highlights (EN, one per line)"><textarea name="highlightsEn" rows="5" value={workForm.highlightsEn} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Status">
+                        <select name="status" value={workForm.status} onChange={handleWorkFieldChange} className={lightFieldClassName}>
+                          <option value="draft">Draft</option>
+                          <option value="published">Published</option>
+                        </select>
+                      </Field>
+                      <Field label="Order"><input name="order" type="number" value={workForm.order} onChange={handleWorkFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <button type="submit" className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white">
+                      {selectedWorkItemId ? "Update work item" : "Create work item"}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="space-y-4">
+                  {[...workItems].sort(sortContentByOrderAndDate).map((item) => (
+                    <article key={item._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-xl font-medium text-slate-900">{getLocalizedFormValue(item.title, "vi")}</h3>
+                          <p className="mt-2 text-sm text-slate-500">{[getLocalizedFormValue(item.company, "vi"), getLocalizedFormValue(item.period, "vi")].filter(Boolean).join(" · ")}</p>
+                          <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(item.summary, "vi")}</p>
+                        </div>
+                        <StatusBadge value={item.status} />
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {(item.highlights || []).map((highlight) => (
+                          <span key={highlight} className="rounded-full bg-white px-3 py-1 text-xs text-slate-500 ring-1 ring-slate-200">
+                            {getLocalizedFormValue(highlight, "vi")}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-4 flex gap-2">
+                        <button type="button" onClick={() => { setSelectedWorkItemId(item._id); setWorkForm(toWorkForm(item)); }} className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white">
+                          Edit
+                        </button>
+                        <button type="button" onClick={() => handleWorkDelete(item._id)} className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600">
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-8 text-slate-800 shadow-sm">
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div>
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Code</p>
+                      <h2 className="mt-3 text-3xl font-light text-slate-900">Manage code repositories</h2>
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedCodeItemId(item._id);
-                        setCodeForm(toCodeForm(item));
+                        setSelectedCodeItemId("");
+                        setCodeForm(emptyCodeForm);
                       }}
-                      className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white"
+                      className="rounded-full border border-slate-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-700"
                     >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCodeDelete(item._id)}
-                      className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600"
-                    >
-                      Delete
+                      New code item
                     </button>
                   </div>
-                </article>
-              ))}
-            </div>
+
+                  <form onSubmit={handleCodeSubmit} className="mt-6 grid gap-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Owner"><input name="owner" value={codeForm.owner} onChange={handleCodeFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Repository name"><input name="name" value={codeForm.name} onChange={handleCodeFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Summary (VI)"><textarea name="summaryVi" rows="4" value={codeForm.summaryVi} onChange={handleCodeFieldChange} className={lightFieldClassName} /></Field>
+                      <Field label="Summary (EN)"><textarea name="summaryEn" rows="4" value={codeForm.summaryEn} onChange={handleCodeFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <Field label="Repository URL">
+                      <input name="repositoryUrl" value={codeForm.repositoryUrl} onChange={handleCodeFieldChange} className={lightFieldClassName} placeholder="https://github.com/username/repository" />
+                    </Field>
+                    <Field label="Tags (one per line: vi|en|bg-color)">
+                      <textarea name="tags" rows="6" value={codeForm.tags} onChange={handleCodeFieldChange} className={lightFieldClassName} placeholder={"React|React|bg-sky-500\nNút UI|UI Button|bg-emerald-500"} />
+                    </Field>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Status">
+                        <select name="status" value={codeForm.status} onChange={handleCodeFieldChange} className={lightFieldClassName}>
+                          <option value="draft">Draft</option>
+                          <option value="published">Published</option>
+                        </select>
+                      </Field>
+                      <Field label="Order"><input name="order" type="number" value={codeForm.order} onChange={handleCodeFieldChange} className={lightFieldClassName} /></Field>
+                    </div>
+                    <button type="submit" className="w-fit rounded-full bg-slate-900 px-5 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white">
+                      {selectedCodeItemId ? "Update code item" : "Create code item"}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="space-y-4">
+                  {[...codeItems].sort(sortContentByOrderAndDate).map((item) => (
+                    <article key={item._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-xl font-medium text-slate-900">{item.owner}/{item.name}</h3>
+                          <p className="mt-3 text-sm leading-6 text-slate-600">{getLocalizedFormValue(item.summary, "vi")}</p>
+                          <a href={item.repositoryUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-sm font-medium text-sky-600 transition hover:opacity-70">
+                            {item.repositoryUrl}
+                          </a>
+                        </div>
+                        <StatusBadge value={item.status} />
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {(item.tags || []).map((tag) => (
+                          <span key={`${item._id}-${getLocalizedFormValue(tag.label, "vi")}`} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200">
+                            <span className={`h-2.5 w-2.5 rounded-full ${tag.color || "bg-slate-500"}`}></span>
+                            {getLocalizedFormValue(tag.label, "vi")}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-4 flex gap-2">
+                        <button type="button" onClick={() => { setSelectedCodeItemId(item._id); setCodeForm(toCodeForm(item)); }} className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white">
+                          Edit
+                        </button>
+                        <button type="button" onClick={() => handleCodeDelete(item._id)} className="rounded-full border border-rose-200 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-rose-600">
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
+        ) : null}
       </section>
     </div>
   );
@@ -1635,7 +1578,7 @@ async function readFileAsDataUrl(file) {
   });
 }
 
-function Field({ label, children, labelClassName = "text-sm text-slate-300" }) {
+function Field({ label, children, labelClassName = "text-sm font-medium text-slate-700" }) {
   return (
     <label className="grid min-w-0 gap-2">
       <span className={labelClassName}>{label}</span>
@@ -1659,6 +1602,8 @@ function StatusBadge({ value }) {
   const palette =
     value === "published" || value === "replied"
       ? "bg-emerald-100 text-emerald-700"
+      : value === "unread"
+        ? "bg-amber-100 text-amber-700"
       : value === "featured"
         ? "bg-amber-100 text-amber-700"
         : "bg-slate-200 text-slate-600";
@@ -1683,6 +1628,16 @@ function formatAdminDate(value) {
     dateStyle: "medium",
     timeStyle: "short"
   });
+}
+
+function truncateText(value, maxLength = 140) {
+  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength).trim()}...`;
 }
 
 function toArticleForm(article) {
@@ -1796,7 +1751,7 @@ function sortContentByOrderAndDate(left, right) {
 }
 
 const fieldClassName =
-  "w-full min-w-0 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-400";
+  "w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-sky-400 focus:bg-white";
 
 const lightFieldClassName =
   "w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-sky-400 focus:bg-white";
