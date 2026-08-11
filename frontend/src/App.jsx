@@ -1423,7 +1423,7 @@ function Highlight({ children, tone, emphasized = false }) {
   }
 
   const baseClassName =
-    "inline font-medium text-slate-800 underline decoration-2 underline-offset-4";
+    "inline font-medium underline decoration-2 underline-offset-4";
 
   return <span className={`${baseClassName} ${tone || ""}`.trim()}>{children}</span>;
 }
