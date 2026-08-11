@@ -538,9 +538,7 @@ function HomePage({ profileState, language }) {
                 >
                   <div className="p-4">
                     <div className="flex gap-2">
-                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
-                        GH
-                      </div>
+                      <RepositoryAvatar repositoryUrl={repo.repositoryUrl} owner={repo.owner} />
 
                       <p className="self-center break-words text-sm font-medium text-slate-800">
                         {repo.owner}
@@ -1467,6 +1465,68 @@ function GitHubIcon({ className }) {
       <path d="M12 2C6.48 2 2 6.59 2 12.25c0 4.53 2.87 8.37 6.84 9.72.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.21-3.37-1.21-.46-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.67.35-1.12.64-1.38-2.22-.26-4.55-1.14-4.55-5.09 0-1.12.39-2.03 1.03-2.74-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.82c.85 0 1.71.12 2.51.35 1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.71 1.03 1.62 1.03 2.74 0 3.96-2.34 4.82-4.57 5.08.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .27.18.59.69.49A10.27 10.27 0 0 0 22 12.25C22 6.59 17.52 2 12 2Z" />
     </svg>
   );
+}
+
+function RepositoryAvatar({ repositoryUrl, owner }) {
+  const avatarUrl = getGitHubAvatarUrl(repositoryUrl);
+
+  if (!avatarUrl) {
+    return (
+      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
+        GH
+      </div>
+    );
+  }
+
+  return (
+    <span className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
+      <img
+        src={avatarUrl}
+        alt={`${owner || "GitHub"} avatar`}
+        className="h-5 w-5 rounded-full object-cover ring-1 ring-slate-200"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={(event) => {
+          event.currentTarget.style.display = "none";
+          const fallbackElement = event.currentTarget.parentElement?.querySelector("[data-avatar-fallback='true']");
+
+          if (fallbackElement) {
+            fallbackElement.classList.remove("hidden");
+          }
+        }}
+      />
+      <span
+        data-avatar-fallback="true"
+        className="hidden h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700"
+      >
+        GH
+      </span>
+    </span>
+  );
+}
+
+function getGitHubAvatarUrl(repositoryUrl) {
+  if (!repositoryUrl) {
+    return "";
+  }
+
+  try {
+    const url = new URL(repositoryUrl);
+
+    if (!/github\.com$/i.test(url.hostname.replace(/^www\./, ""))) {
+      return "";
+    }
+
+    const [owner] = url.pathname.split("/").filter(Boolean);
+
+    if (!owner) {
+      return "";
+    }
+
+    return `https://github.com/${owner}.png?size=80`;
+  } catch {
+    return "";
+  }
 }
 
 function useProjects() {
